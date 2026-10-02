@@ -68,6 +68,7 @@ function startScene() {
 }
 
 nextButton.addEventListener("click", () => {
+  if (document.getElementById("story").hidden || !isLandscape()) return;
   if (stage === "intro") {
     stage = "idle";
     charactersLayer.hidden = false;
@@ -107,4 +108,4 @@ const imagePaths = [
   assetRoot + "vikutoria_idle.png",
   ...dialogues.map((dialogue) => assetRoot + dialogue.sprite)
 ];
-Promise.all(imagePaths.map(preloadImage)).then(startScene);
+const sceneReady = Promise.all(imagePaths.map(preloadImage));

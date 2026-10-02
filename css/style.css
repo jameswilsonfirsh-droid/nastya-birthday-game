@@ -70,3 +70,49 @@ button:focus-visible { outline: 2px solid #fff4cc; outline-offset: 2px; }
 @media (max-width: 600px) {
   .next-button { bottom: 5px; }
 }
+
+/* Технические экраны запуска: только чёрный фон и белый текст. */
+body { background: #000; }
+.technical-screen, .loading-screen {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 10;
+  background: #000;
+  color: #fff;
+}
+.technical-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  text-align: center;
+}
+.technical-screen p { margin: 0; max-width: 650px; white-space: pre-line; font-size: clamp(16px, 2.5vw, 24px); line-height: 1.5; }
+.technical-screen button, .technical-button {
+  margin: 0;
+  padding: 12px 24px;
+  border: 1px solid #fff;
+  border-radius: 0;
+  color: #fff;
+  background: #000;
+  font: inherit;
+  font-size: 16px;
+  text-shadow: none;
+}
+.technical-screen button:focus-visible, .technical-button:focus-visible { outline: 2px solid #fff; }
+.technical-screen button:disabled { opacity: .5; }
+.orientation-screen { z-index: 30; }
+.loading-screen video { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.enter-button { position: absolute; bottom: max(32px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); }
+@media (orientation: landscape) {
+  .orientation-screen { display: none; }
+}
+@media (orientation: portrait) {
+  .orientation-screen { display: flex !important; }
+}

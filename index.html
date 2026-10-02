@@ -2,13 +2,26 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Настя и Викутория</title>
-  <link rel="stylesheet" href="css/style.css?v=manual-scene-4">
-  <script src="js/game.js?v=dialogue-7048dd9" defer></script>
+  <link rel="stylesheet" href="css/style.css?v=startup-flow-1">
+  <script src="js/game.js?v=startup-flow-1" defer></script>
+  <script src="js/startup.js?v=startup-flow-1" defer></script>
 </head>
 <body>
-  <main class="page">
+  <div id="orientation-screen" class="technical-screen orientation-screen">
+    <p>Поверните устройство горизонтально</p>
+  </div>
+  <section id="startup-screen" class="technical-screen" aria-label="Подготовка к игре">
+    <p id="startup-text" aria-live="polite">Продолжите, когда устройство расположено горизонтально.</p>
+    <button id="startup-button" type="button">Продолжить</button>
+  </section>
+  <section id="loading-screen" class="loading-screen" aria-label="Видео-заставка" hidden>
+    <video id="loading-video" playsinline webkit-playsinline preload="auto" disablepictureinpicture
+      src="assets/video/genshin-loading.mp4"></video>
+    <button id="enter-button" class="technical-button enter-button" type="button" hidden>Войти</button>
+  </section>
+  <main id="story" class="page" hidden>
     <h1>Настя и Викутория</h1>
     <section class="game-window" aria-label="Первая сцена: пляж">
       <div class="background" aria-hidden="true">
