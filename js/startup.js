@@ -136,7 +136,7 @@ function updateOrientation() {
   startupScreen.inert = !landscape;
   loadingScreen.inert = !landscape;
   story.inert = !landscape;
-  document.body.style.overflow = landscape && startupStage === "story" ? "" : "hidden";
+  document.body.style.overflow = "hidden";
   if (!landscape && startupStage === "video" && !loadingVideo.paused) {
     pausedForOrientation = true;
     loadingVideo.pause();
