@@ -36,7 +36,7 @@ const nextButton = document.getElementById("next-button");
 const characters = document.querySelectorAll("[data-character]");
 let dialogueIndex = 0;
 let stage = "intro";
-let stageTimer;
+
 
 function renderDialogue() {
   const dialogue = dialogues[dialogueIndex];
@@ -53,7 +53,6 @@ function renderDialogue() {
 }
 
 function startScene() {
-  clearTimeout(stageTimer);
   stage = "intro";
   dialogueIndex = 0;
   charactersLayer.hidden = true;
@@ -62,20 +61,24 @@ function startScene() {
   document.getElementById("characterLeft").src = assetRoot + "nastya_idle.png";
   document.getElementById("characterRight").src = assetRoot + "vikutoria_idle.png";
 
-  // Кадр 1: только пляж. Кадр 2: оба idle-спрайта, без реплики.
-  stageTimer = setTimeout(() => {
-    stage = "idle";
-    charactersLayer.hidden = false;
-    stageTimer = setTimeout(() => {
-      stage = "dialogue";
-      renderDialogue();
-      dialogueBox.hidden = false;
-    }, 1000);
-  }, 1400);
+  nextButton.disabled = false;
+  nextButton.textContent = "Далее ◆";
+  nextButton.setAttribute("aria-label", "Показать персонажей");
 }
 
 nextButton.addEventListener("click", () => {
-  if (stage !== "dialogue") return;
+  if (stage === "intro") {
+    stage = "idle";
+    charactersLayer.hidden = false;
+    nextButton.setAttribute("aria-label", "Начать разговор");
+    return;
+  }
+  if (stage === "idle") {
+    stage = "dialogue";
+    renderDialogue();
+    dialogueBox.hidden = false;
+    return;
+  }
   if (dialogueIndex === dialogues.length - 1) {
     startScene();
     return;
