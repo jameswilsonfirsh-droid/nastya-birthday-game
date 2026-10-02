@@ -3,40 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Настя и Викутория — визуальная новелла</title>
-  <link rel="stylesheet" href="css/style.css?v=beach-scene-2">
-  <script src="js/game.js?v=beach-scene-2" defer></script>
+  <title>Настя и Викутория</title>
+  <link rel="stylesheet" href="css/style.css?v=first-scene-3">
+  <script src="js/game.js?v=first-scene-3" defer></script>
 </head>
 <body>
   <main class="page">
-    <header class="page-header">
-      <p class="eyebrow">Визуальная новелла</p>
-      <h1>Настя и Викутория</h1>
-    </header>
-    <section class="game-window" aria-label="Игровое окно">
+    <h1>Настя и Викутория</h1>
+    <section class="game-window" aria-label="Первая сцена: пляж">
       <div class="background" aria-hidden="true">
-        <img id="background" class="background-image" src="assets/images/backgrounds/beach.png" alt="">
+        <img id="background" src="assets/images/backgrounds/beach.png" alt="">
       </div>
-      <div class="characters" aria-label="Персонажи сцены">
-        <div class="character" data-character="Настя">
-          <img id="characterLeft" class="character-sprite" src="assets/images/characters/nastya_01_confused.png" alt="Настя">
-          <span>Настя</span>
+      <div id="characters" class="characters" aria-label="Персонажи сцены" hidden>
+        <div class="character character-left" data-character="Настя">
+          <img id="characterLeft" src="assets/images/characters/nastya_idle.png" alt="Настя">
         </div>
-        <div class="character" data-character="Викутория">
-          <img id="characterRight" class="character-sprite" src="assets/images/characters/vikutoria_01_indignant.png" alt="Викутория">
-          <span>Викутория</span>
+        <div class="character character-right" data-character="Викутория">
+          <img id="characterRight" src="assets/images/characters/vikutoria_idle.png" alt="Викутория — летающая спутница Насти">
         </div>
       </div>
-      <div class="dialogue-box">
+      <div id="dialogue-box" class="dialogue-box" hidden>
         <div class="dialogue-content" aria-live="polite" aria-atomic="true">
-          <h2 id="speaker">Рассказчик</h2>
-          <p id="dialogue-text">Вечер обещал стать особенным. Настя ждала Викуторию у окна.</p>
+          <h2 id="speaker"></h2>
+          <p id="dialogue-text"></p>
         </div>
-        <button id="next-button" type="button">Далее <span aria-hidden="true">→</span></button>
+        <button id="next-button" type="button" aria-label="Следующая реплика">Далее <span aria-hidden="true">◆</span></button>
       </div>
     </section>
-    <p class="hint">Нажимайте «Далее», чтобы продолжить историю.</p>
-    <noscript>Чтобы переключать диалоги, включите JavaScript в браузере.</noscript>
+    <noscript>Включите JavaScript, чтобы начать разговор.</noscript>
   </main>
 </body>
 </html>
