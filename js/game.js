@@ -31,3 +31,40 @@ nextButton.addEventListener("click", () => {
 });
 
 renderDialogue();
+
+// Пути относительно index.html. Замените имена на свои файлы.
+// Фон может быть JPG/PNG/WebP; персонажи — PNG с прозрачностью.
+// Пустая строка отключает изображение и оставляет заглушку.
+const sceneImages = {
+  background: "assets/images/backgrounds/background.jpg",
+  characterLeft: "assets/images/characters/characterLeft.png",
+  characterRight: "assets/images/characters/characterRight.png"
+};
+
+function loadSceneImage(id, path) {
+  const image = document.getElementById(id);
+  const character = id === "background" ? null : image.parentElement;
+  image.hidden = true;
+  if (character) character.classList.remove("has-sprite");
+
+  image.onload = () => {
+    image.hidden = false;
+    if (character) character.classList.add("has-sprite");
+  };
+  image.onerror = () => {
+    image.hidden = true;
+    if (character) character.classList.remove("has-sprite");
+  };
+
+  if (path) {
+    image.src = path;
+  } else {
+    image.removeAttribute("src");
+  }
+}
+
+function loadSceneImages(images) {
+  Object.entries(images).forEach(([id, path]) => loadSceneImage(id, path));
+}
+
+loadSceneImages(sceneImages);
