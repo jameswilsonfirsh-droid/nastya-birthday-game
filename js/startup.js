@@ -107,6 +107,14 @@ startupButton.addEventListener("click", () => {
   }
 });
 
+function updateEnterButton() {
+  if (startupStage !== "video") return;
+  const remaining = loadingVideo.duration - loadingVideo.currentTime;
+  enterButton.hidden = !(Number.isFinite(remaining) && remaining <= 3);
+}
+loadingVideo.addEventListener("timeupdate", updateEnterButton);
+loadingVideo.addEventListener("durationchange", updateEnterButton);
+
 loadingVideo.addEventListener("ended", () => {
   if (startupStage !== "video") return;
   loadingVideo.pause();
@@ -117,9 +125,10 @@ loadingVideo.addEventListener("ended", () => {
 loadingVideo.addEventListener("error", () => showVideoError(loadingVideo.error));
 
 enterButton.addEventListener("click", async () => {
-  if (!isLandscape() || startupStage !== "finished") return;
+  if (!isLandscape() || enterButton.hidden || !["video", "finished"].includes(startupStage)) return;
   startupStage = "entering";
   enterButton.disabled = true;
+  loadingVideo.pause();
   await sceneReady;
   loadingVideo.pause();
   loadingScreen.hidden = true;
