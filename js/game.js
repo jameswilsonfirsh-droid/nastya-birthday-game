@@ -4,25 +4,26 @@ const assetRoot = "assets/images/characters/";
 const dialogues = [
   {
     speaker: "Настя",
-    text: "Ты пришла! Я уже думала, что наш вечер приключений придётся отложить.",
+    text: "Вика, что с тобой?",
     target: "characterLeft",
     sprite: "nastya_01_confused.png"
   },
   {
     speaker: "Викутория",
-    text: "Разве я могла пропустить такое событие? У меня для тебя есть маленький сюрприз.",
+    displayName: "???",
+    text: "Кто? Где? Какая Вика? Я Викутория!",
     target: "characterRight",
     sprite: "vikutoria_01_indignant.png"
   },
   {
     speaker: "Настя",
-    text: "Тогда я готова узнать, что ты придумала.",
+    text: "...Понятно...",
     target: "characterLeft",
     sprite: "nastya_02_done.png"
   },
   {
     speaker: "Викутория",
-    text: "Тогда скорее! Нас ждёт небольшое приключение.",
+    text: "Погнали за мной!",
     target: "characterRight",
     sprite: "vikutoria_02_letsgo.png"
   }
@@ -42,7 +43,7 @@ function renderDialogue() {
   const dialogue = dialogues[dialogueIndex];
   // Меняем только эмоцию говорящего; второй персонаж сохраняет свой спрайт.
   document.getElementById(dialogue.target).src = assetRoot + dialogue.sprite;
-  speakerElement.textContent = dialogue.speaker;
+  speakerElement.textContent = dialogue.displayName ?? dialogue.speaker;
   textElement.textContent = dialogue.text;
   characters.forEach((character) => {
     character.classList.toggle("is-speaking", character.dataset.character === dialogue.speaker);
