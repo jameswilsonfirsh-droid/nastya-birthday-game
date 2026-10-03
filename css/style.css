@@ -125,7 +125,7 @@ body { background: #000; }
   transform: translate(-50%, -50%);
   display: grid;
   place-items: center;
-  width: clamp(56px, 8vw, 110px);
+  width: clamp(28px, 4vw, 55px);
   aspect-ratio: 1;
   margin: 0;
   padding: 0;
