@@ -114,3 +114,45 @@ body { background: #000; }
 @media (orientation: portrait) {
   .orientation-screen { display: flex !important; }
 }
+
+/* Универсальный экран путешествия. Телепорт расположен в центре карты. */
+.travel-map { position: relative; background: #101820; }
+.travel-map-image { display: block; width: 100%; height: 100%; object-fit: contain; }
+.teleport-button {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: clamp(56px, 8vw, 110px);
+  aspect-ratio: 1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.teleport-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px #8ceaffb3) drop-shadow(0 0 20px #76cfff80);
+  animation: teleport-pulse 2.4s ease-in-out infinite;
+  transition: filter .2s;
+}
+.teleport-button:hover img, .teleport-button:focus-visible img {
+  filter: drop-shadow(0 0 12px #c0f8ff) drop-shadow(0 0 26px #76cfffaa);
+}
+.teleport-button:active { transform: translate(-50%, -50%) scale(.94); }
+.teleport-button:focus-visible { outline: 2px solid #baf3ff; outline-offset: 6px; border-radius: 50%; }
+@keyframes teleport-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+.next-scene { display: grid; place-items: center; background: #000; color: #fff; text-align: center; padding: 24px; }
+.next-scene p { margin: 0; line-height: 1.6; font-size: clamp(14px, 2vw, 22px); }
+@media (prefers-reduced-motion: reduce) {
+  .teleport-button img { animation: none; }
+}

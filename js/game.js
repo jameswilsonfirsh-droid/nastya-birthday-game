@@ -80,8 +80,8 @@ function renderDialogue() {
     character.classList.toggle("is-speaking", character.dataset.character === dialogue.speaker);
   });
   const isLast = dialogueIndex === dialogues.length - 1;
-  nextButton.textContent = isLast ? "Заново ◆" : "Далее ◆";
-  nextButton.setAttribute("aria-label", isLast ? "Начать сцену заново" : "Следующая реплика");
+  nextButton.textContent = "Далее ◆";
+  nextButton.setAttribute("aria-label", isLast ? "Открыть карту путешествия" : "Следующая реплика");
 }
 
 function startScene() {
@@ -116,7 +116,10 @@ nextButton.addEventListener("click", () => {
   }
   if (dialogueIndex === dialogues.length - 1) {
     stopSceneMusic();
-    startScene();
+    showTravelMap({
+      map: "assets/images/maps/map_fontaine_rizley.png",
+      onTeleport: showNextScenePlaceholder
+    });
     return;
   }
   dialogueIndex += 1;
@@ -143,3 +146,40 @@ const imagePaths = [
   ...dialogues.map((dialogue) => assetRoot + dialogue.sprite)
 ];
 const sceneReady = Promise.all(imagePaths.map(preloadImage));
+
+// Один экран для путешествий: передайте путь к карте и функцию следующей сцены.
+const beachScene = document.getElementById("beach-scene");
+const travelMap = document.getElementById("travel-map");
+const travelMapImage = document.getElementById("travel-map-image");
+const teleportButton = document.getElementById("teleport-button");
+const nextScene = document.getElementById("next-scene");
+let travelDestination = null;
+
+function showTravelMap({ map, onTeleport, alt = "Карта путешествия" }) {
+  if (typeof map !== "string" || !map || typeof onTeleport !== "function") {
+    throw new TypeError("Укажите путь к карте и функцию перехода onTeleport.");
+  }
+  stage = "travel";
+  beachScene.hidden = true;
+  nextScene.hidden = true;
+  travelMapImage.src = map;
+  travelMapImage.alt = alt;
+  travelDestination = onTeleport;
+  teleportButton.disabled = false;
+  travelMap.hidden = false;
+  if (isLandscape()) teleportButton.focus({ preventScroll: true });
+}
+
+function showNextScenePlaceholder() {
+  stage = "next-scene";
+  nextScene.hidden = false;
+}
+
+teleportButton.addEventListener("click", () => {
+  if (travelMap.hidden || !isLandscape() || !travelDestination || teleportButton.disabled) return;
+  teleportButton.disabled = true;
+  const destination = travelDestination;
+  travelDestination = null;
+  travelMap.hidden = true;
+  destination();
+});

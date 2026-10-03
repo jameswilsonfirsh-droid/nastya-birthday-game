@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Настя и Викутория</title>
-  <link rel="stylesheet" href="css/style.css?v=beach-music-1">
-  <script src="js/game.js?v=beach-music-1" defer></script>
-  <script src="js/startup.js?v=beach-music-1" defer></script>
+  <link rel="stylesheet" href="css/style.css?v=map-teleport-1">
+  <script src="js/game.js?v=map-teleport-1" defer></script>
+  <script src="js/startup.js?v=map-teleport-1" defer></script>
 </head>
 <body>
   <div id="orientation-screen" class="technical-screen orientation-screen">
@@ -23,7 +23,7 @@
   </section>
   <audio id="scene-music" src="assets/audio/beach_intro_theme.mp3" preload="auto" loop></audio>
   <main id="story" class="page" hidden>
-    <section class="game-window" aria-label="Первая сцена: пляж">
+    <section id="beach-scene" class="game-window" aria-label="Первая сцена: пляж">
       <div class="background" aria-hidden="true">
         <img id="background" src="assets/images/backgrounds/beach.png" alt="">
       </div>
@@ -42,6 +42,15 @@
         </div>
       </div>
       <button id="next-button" class="next-button" type="button" aria-label="Показать персонажей" disabled>Далее <span aria-hidden="true">◆</span></button>
+    </section>
+    <section id="travel-map" class="game-window travel-map" aria-label="Карта путешествия" hidden>
+      <img id="travel-map-image" class="travel-map-image" src="assets/images/maps/map_fontaine_rizley.png" alt="Карта путешествия">
+      <button id="teleport-button" class="teleport-button" type="button" aria-label="Телепортироваться в следующую локацию">
+        <img src="assets/images/ui/teleport_icon.png" alt="">
+      </button>
+    </section>
+    <section id="next-scene" class="game-window next-scene" aria-label="Следующая сюжетная сцена" hidden>
+      <p>Вы прибыли в новую локацию.<br>Следующая сюжетная сцена появится здесь.</p>
     </section>
     <noscript>Включите JavaScript, чтобы начать разговор.</noscript>
   </main>
