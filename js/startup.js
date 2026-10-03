@@ -124,12 +124,14 @@ loadingVideo.addEventListener("ended", () => {
 });
 loadingVideo.addEventListener("error", () => showVideoError(loadingVideo.error));
 
-enterButton.addEventListener("click", async () => {
-  if (!isLandscape() || enterButton.hidden || !["video", "finished"].includes(startupStage)) return;
+// Готовим сцену заранее, чтобы музыка запускалась внутри нажатия «Войти».
+enterButton.disabled = true;
+sceneReady.then(() => { enterButton.disabled = false; });
+
+enterButton.addEventListener("click", () => {
+  if (!isLandscape() || enterButton.disabled || enterButton.hidden || !["video", "finished"].includes(startupStage)) return;
   startupStage = "entering";
   enterButton.disabled = true;
-  loadingVideo.pause();
-  await sceneReady;
   loadingVideo.pause();
   loadingScreen.hidden = true;
   startupScreen.hidden = true;

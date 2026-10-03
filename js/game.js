@@ -37,6 +37,37 @@ const nextButton = document.getElementById("next-button");
 const characters = document.querySelectorAll("[data-character]");
 let dialogueIndex = 0;
 let stage = "intro";
+const sceneMusic = document.getElementById("scene-music");
+let musicActive = false;
+let musicNeedsGesture = false;
+let musicAttempt = 0;
+
+function playSceneMusic() {
+  const attempt = ++musicAttempt;
+  musicNeedsGesture = false;
+  const playback = sceneMusic.play();
+  if (playback) playback.catch((error) => {
+    if (!musicActive || attempt !== musicAttempt) return;
+    musicNeedsGesture = error.name === "NotAllowedError";
+    if (!musicNeedsGesture) console.warn("Не удалось воспроизвести музыку сцены:", error);
+  });
+}
+
+function startSceneMusic() {
+  if (musicActive) return;
+  musicActive = true;
+  sceneMusic.currentTime = 0;
+  playSceneMusic();
+}
+
+function stopSceneMusic() {
+  musicActive = false;
+  musicNeedsGesture = false;
+  musicAttempt += 1;
+  sceneMusic.pause();
+  sceneMusic.currentTime = 0;
+}
+
 
 
 function renderDialogue() {
@@ -54,6 +85,7 @@ function renderDialogue() {
 }
 
 function startScene() {
+  startSceneMusic();
   stage = "intro";
   dialogueIndex = 0;
   charactersLayer.hidden = true;
@@ -69,6 +101,7 @@ function startScene() {
 
 nextButton.addEventListener("click", () => {
   if (document.getElementById("story").hidden || !isLandscape()) return;
+  if (musicActive && musicNeedsGesture) playSceneMusic();
   if (stage === "intro") {
     stage = "idle";
     charactersLayer.hidden = false;
@@ -82,6 +115,7 @@ nextButton.addEventListener("click", () => {
     return;
   }
   if (dialogueIndex === dialogues.length - 1) {
+    stopSceneMusic();
     startScene();
     return;
   }
