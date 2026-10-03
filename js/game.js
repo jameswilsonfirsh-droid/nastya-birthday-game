@@ -116,10 +116,7 @@ nextButton.addEventListener("click", () => {
   }
   if (dialogueIndex === dialogues.length - 1) {
     stopSceneMusic();
-    showTravelMap({
-      map: "assets/images/maps/map_fontaine_rizley.png",
-      onTeleport: showNextScenePlaceholder
-    });
+    openMap("assets/images/maps/map_fontaine_rizley.png", "rizley_scene");
     return;
   }
   dialogueIndex += 1;
@@ -147,7 +144,7 @@ const imagePaths = [
 ];
 const sceneReady = Promise.all(imagePaths.map(preloadImage));
 
-// Один экран для путешествий: передайте путь к карте и функцию следующей сцены.
+// Один экран карты для всех путешествий: путь к изображению и имя следующей сцены.
 const beachScene = document.getElementById("beach-scene");
 const travelMap = document.getElementById("travel-map");
 const travelMapImage = document.getElementById("travel-map-image");
@@ -155,19 +152,38 @@ const teleportButton = document.getElementById("teleport-button");
 const nextScene = document.getElementById("next-scene");
 let travelDestination = null;
 
-function showTravelMap({ map, onTeleport, alt = "Карта путешествия" }) {
-  if (typeof map !== "string" || !map || typeof onTeleport !== "function") {
-    throw new TypeError("Укажите путь к карте и функцию перехода onTeleport.");
+const sceneRegistry = new Map();
+
+function registerScene(sceneId, handler) {
+  if (typeof sceneId !== "string" || !sceneId.trim() || typeof handler !== "function") {
+    throw new TypeError("Укажите имя сцены и функцию её запуска.");
+  }
+  sceneRegistry.set(sceneId, handler);
+}
+
+function openMap(mapPath, nextSceneId) {
+  if (typeof mapPath !== "string" || !mapPath.trim()) {
+    throw new TypeError("Укажите путь к изображению карты.");
+  }
+  if (!sceneRegistry.has(nextSceneId)) {
+    throw new Error("Неизвестная сюжетная сцена: " + nextSceneId);
   }
   stage = "travel";
   beachScene.hidden = true;
   nextScene.hidden = true;
-  travelMapImage.src = map;
-  travelMapImage.alt = alt;
-  travelDestination = onTeleport;
+  travelMapImage.src = mapPath;
+  travelMapImage.alt = "Карта путешествия";
+  travelDestination = nextSceneId;
   teleportButton.disabled = false;
   travelMap.hidden = false;
   if (isLandscape()) teleportButton.focus({ preventScroll: true });
+}
+
+function launchScene(sceneId) {
+  const handler = sceneRegistry.get(sceneId);
+  if (!handler) throw new Error("Неизвестная сюжетная сцена: " + sceneId);
+  travelMap.hidden = true;
+  handler();
 }
 
 function showNextScenePlaceholder() {
@@ -175,11 +191,14 @@ function showNextScenePlaceholder() {
   nextScene.hidden = false;
 }
 
+// Пока эта сцена использует существующий временный переход.
+registerScene("rizley_scene", showNextScenePlaceholder);
+
 teleportButton.addEventListener("click", () => {
   if (travelMap.hidden || !isLandscape() || !travelDestination || teleportButton.disabled) return;
   teleportButton.disabled = true;
   const destination = travelDestination;
   travelDestination = null;
   travelMap.hidden = true;
-  destination();
+  launchScene(destination);
 });
