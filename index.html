@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Настя и Викутория</title>
-  <link rel="stylesheet" href="css/style.css?v=teleport-half-1">
-  <script src="js/game.js?v=map-transition-2" defer></script>
+  <link rel="stylesheet" href="css/style.css?v=fontaine-chest-1">
+  <script src="js/game.js?v=fontaine-chest-1" defer></script>
   <script src="js/startup.js?v=map-teleport-1" defer></script>
 </head>
 <body>
@@ -49,8 +49,21 @@
         <img src="assets/images/ui/teleport_icon.png" alt="">
       </button>
     </section>
-    <section id="next-scene" class="game-window next-scene" aria-label="Следующая сюжетная сцена" hidden>
-      <p>Вы прибыли в новую локацию.<br>Следующая сюжетная сцена появится здесь.</p>
+    <section id="next-scene" class="game-window fontaine-scene" aria-label="Фонтейн" hidden>
+      <div id="fontaine-background" class="fontaine-background" aria-hidden="true"></div>
+      <div id="fontaine-nastya" class="fontaine-person fontaine-nastya" aria-label="Настя, нейтральное состояние" hidden><span>Настя</span></div>
+      <div id="fontaine-vikutoria" class="fontaine-person fontaine-vikutoria" aria-label="Викутория, нейтральное состояние" hidden><span>Викутория</span><i class="pointing-arm" aria-hidden="true"></i></div>
+      <div id="fontaine-rizley" class="fontaine-person fontaine-rizley" aria-label="Временный персонаж Ризли" hidden><span>Ризли</span></div>
+      <button id="fontaine-chest" class="fontaine-chest" type="button" aria-label="Открыть сундук" disabled hidden><span aria-hidden="true"></span></button>
+      <button id="fontaine-next" class="next-button" type="button">Далее ◆</button>
+      <div id="fontaine-note-overlay" class="fontaine-note-overlay" hidden>
+        <div class="fontaine-note" role="dialog" aria-modal="true" aria-label="Записка из сундука" tabindex="-1">
+          <p>Откройте пакет с пиктограммой волка.</p>
+          <p>Нажмите «Продолжить» после вскрытия пакета.</p>
+          <button id="fontaine-note-continue" type="button">Продолжить</button>
+        </div>
+      </div>
+      <div id="rizley-dialogue" class="dialogue-box" aria-label="Диалоговая сцена с Ризли, реплики будут добавлены позже" hidden></div>
     </section>
     <noscript>Включите JavaScript, чтобы начать разговор.</noscript>
   </main>

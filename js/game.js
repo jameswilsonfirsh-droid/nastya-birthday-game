@@ -191,8 +191,8 @@ function showNextScenePlaceholder() {
   nextScene.hidden = false;
 }
 
-// Пока эта сцена использует существующий временный переход.
-registerScene("rizley_scene", showNextScenePlaceholder);
+// Сохраняем маршрут первой карты; он ведёт к вступлению в Фонтейн.
+registerScene("rizley_scene", startFontaineIntro);
 
 teleportButton.addEventListener("click", () => {
   if (travelMap.hidden || !isLandscape() || !travelDestination || teleportButton.disabled) return;
@@ -202,3 +202,72 @@ teleportButton.addEventListener("click", () => {
   travelMap.hidden = true;
   launchScene(destination);
 });
+
+const fontaineBackground = document.getElementById("fontaine-background");
+const fontaineNastya = document.getElementById("fontaine-nastya");
+const fontaineVikutoria = document.getElementById("fontaine-vikutoria");
+const fontaineRizley = document.getElementById("fontaine-rizley");
+const fontaineChest = document.getElementById("fontaine-chest");
+const fontaineNext = document.getElementById("fontaine-next");
+const fontaineNoteOverlay = document.getElementById("fontaine-note-overlay");
+const fontaineContinue = document.getElementById("fontaine-note-continue");
+const rizleyDialogue = document.getElementById("rizley-dialogue");
+let fontaineFrame = 1;
+
+function renderFontaineFrame() {
+  fontaineBackground.classList.toggle("chest-area", fontaineFrame >= 3);
+  fontaineNastya.hidden = fontaineFrame < 2;
+  fontaineVikutoria.hidden = fontaineFrame < 2 || fontaineFrame === 7;
+  fontaineVikutoria.classList.toggle("pointing", fontaineFrame >= 4);
+  fontaineVikutoria.setAttribute("aria-label", fontaineFrame >= 4
+    ? "Викутория впереди, спиной к камере, указывает на сундук"
+    : "Викутория, нейтральное состояние");
+  fontaineRizley.hidden = fontaineFrame !== 7;
+  fontaineChest.hidden = fontaineFrame < 3 || fontaineFrame === 7;
+  fontaineChest.disabled = fontaineFrame !== 5;
+  fontaineChest.classList.toggle("interactive", fontaineFrame === 5);
+  fontaineChest.classList.toggle("opened", fontaineFrame === 6);
+  fontaineNext.hidden = fontaineFrame >= 5;
+  fontaineNoteOverlay.hidden = fontaineFrame !== 6;
+  rizleyDialogue.hidden = fontaineFrame !== 7;
+  // Записка блокирует взаимодействие с объектами за ней.
+  [fontaineNastya, fontaineVikutoria, fontaineChest, fontaineNext].forEach(element => {
+    element.inert = fontaineFrame === 6;
+  });
+}
+
+function startFontaineIntro() {
+  stage = "fontaine-intro";
+  beachScene.hidden = true;
+  nextScene.hidden = false;
+  fontaineFrame = 1;
+  renderFontaineFrame();
+}
+
+fontaineNext.addEventListener("click", () => {
+  if (nextScene.hidden || !isLandscape() || stage !== "fontaine-intro" || fontaineFrame >= 5) return;
+  fontaineFrame += 1;
+  renderFontaineFrame();
+});
+
+fontaineChest.addEventListener("click", () => {
+  if (nextScene.hidden || !isLandscape() || stage !== "fontaine-intro" || fontaineFrame !== 5) return;
+  fontaineFrame = 6;
+  renderFontaineFrame();
+  fontaineContinue.focus({ preventScroll: true });
+});
+
+fontaineContinue.addEventListener("click", () => {
+  if (nextScene.hidden || !isLandscape() || stage !== "fontaine-intro" || fontaineFrame !== 6) return;
+  launchScene("fontaine_rizley_dialogue");
+});
+
+function startRizleyDialoguePlaceholder() {
+  stage = "fontaine-rizley-dialogue";
+  nextScene.hidden = false;
+  fontaineFrame = 7;
+  renderFontaineFrame();
+}
+
+registerScene("fontaine_rizley_intro", startFontaineIntro);
+registerScene("fontaine_rizley_dialogue", startRizleyDialoguePlaceholder);

@@ -156,3 +156,33 @@ body { background: #000; }
 @media (prefers-reduced-motion: reduce) {
   .teleport-button img { animation: none; }
 }
+
+/* Временные объекты Фонтейна: CSS-заглушки без новых изображений. */
+.fontaine-scene { background: #6f9ca8; }
+.fontaine-background { position: absolute; inset: 0; background: linear-gradient(#9ab8c7 0 55%, #679399 55% 70%, #b5c1bc 70%); }
+.fontaine-background::before { content: ""; position: absolute; inset: 12% 8% 30%; background: repeating-linear-gradient(90deg, #dbe3df 0 12%, #788f9b 12% 15%, transparent 15% 25%); border-top: 16px solid #ccd5d5; opacity: .8; }
+.fontaine-background.chest-area { background: linear-gradient(#a3bbc5 0 40%, #748b91 40% 58%, #c7c3b4 58%); }
+.fontaine-background.chest-area::before { inset: 8% 55% 25% 6%; background: repeating-linear-gradient(90deg, #c5d0cf 0 25%, #81949b 25% 33%); }
+.fontaine-person { position: absolute; bottom: 6%; width: 19%; height: 65%; z-index: 1; border-radius: 42% 42% 15% 15%; background: #9a8cad; border: 2px solid #eee9; }
+.fontaine-person::before { content: ""; position: absolute; width: 45%; height: 24%; left: 27.5%; top: -12%; border-radius: 50%; background: #d6c0b1; border: 2px solid #eee9; }
+.fontaine-person span { position: absolute; bottom: 15%; width: 100%; text-align: center; color: #fff; font-size: clamp(10px, 1.5vw, 18px); text-shadow: 0 1px 3px #000; }
+.fontaine-nastya { left: 16%; }
+.fontaine-vikutoria { left: 43%; bottom: 42%; width: 12%; height: 32.5%; background: #b6a7c7; }
+.pointing-arm { display: none; }
+.fontaine-vikutoria.pointing { left: 59%; bottom: 34%; background: #82728f; }
+.fontaine-vikutoria.pointing::before { background: #66576d; }
+.fontaine-vikutoria.pointing .pointing-arm { display: block; position: absolute; left: 85%; top: 28%; width: 75%; height: 9%; background: #b6a7c7; transform: rotate(24deg); transform-origin: left center; border-radius: 8px; }
+.fontaine-rizley { left: 61%; background: #465366; }
+.fontaine-chest { position: absolute; left: 76%; bottom: 18%; width: 14%; height: 16%; margin: 0; padding: 0; z-index: 2; border: 3px solid #d7af62; border-radius: 8px 8px 3px 3px; background: linear-gradient(#8b6139 0 38%, #d7af62 38% 46%, #69472c 46%); }
+.fontaine-chest span { position: absolute; top: 34%; left: 44%; width: 12%; height: 30%; background: #efcf86; }
+.fontaine-chest:disabled { cursor: default; }
+.fontaine-chest.interactive { box-shadow: 0 0 16px #fff0b280; animation: chest-glow 2s ease-in-out infinite; }
+.fontaine-chest.interactive:hover, .fontaine-chest.interactive:focus-visible { filter: brightness(1.18); }
+.fontaine-chest.interactive:active { transform: scale(.96); }
+.fontaine-chest.opened { background: linear-gradient(#38291b 0 40%, #d7af62 40% 46%, #69472c 46%); }
+@keyframes chest-glow { 50% { box-shadow: 0 0 28px #fff0b2c0; } }
+.fontaine-note-overlay { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: #0008; }
+.fontaine-note { width: min(68%, 620px); padding: clamp(12px, 3vw, 32px); background: #e7d7b6; color: #473a2c; box-shadow: 0 8px 28px #0006; transform: rotate(-1deg); border: 1px solid #c3a575; text-align: center; }
+.fontaine-note p { font-size: clamp(12px, 1.8vw, 20px); line-height: 1.5; margin: 0 0 12px; }
+.fontaine-note button { color: #473a2c; border-bottom: 1px solid #806a4c; font-size: clamp(12px, 1.6vw, 18px); }
+@media (prefers-reduced-motion: reduce) { .fontaine-chest.interactive { animation: none; } }
