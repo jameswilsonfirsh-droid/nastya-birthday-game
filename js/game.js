@@ -323,10 +323,8 @@ function showPackageNote(packageType) {
   fontaineNext.hidden = true;
   rizleyDialogue.hidden = true;
   fontaineNoteIcon.src = "assets/images/ui/" + (packageType === "wolf" ? "wolf_package_icon.png" : "flask_package_icon.png");
-  fontaineNoteIcon.alt = packageType === "wolf" ? "Пиктограмма волка" : "Пиктограмма флакона";
-  fontaineNoteText.textContent = packageType === "wolf"
-    ? "Открой пакет с пиктограммой волка."
-    : "Открой пакет с пиктограммой флакона.";
+  fontaineNoteIcon.alt = packageType === "wolf" ? "Пиктограмма лапы" : "Пиктограмма флакона";
+  fontaineNoteText.textContent = "Открой сверток с этим символом";
   fontaineContinue.hidden = false;
   fontaineContinue.disabled = false;
   [fontaineNastya, fontaineVikutoria, fontaineRizley, fontaineChest, fontaineNext, rizleyDialogue].forEach(element => { element.inert = true; });
