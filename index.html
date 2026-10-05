@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Настя и Викутория</title>
-  <link rel="stylesheet" href="css/style.css?v=fontaine-gifts-2">
-  <script src="js/game.js?v=rizley-rain-1" defer></script>
+  <link rel="stylesheet" href="css/style.css?v=neuvillette-1">
+  <script src="js/game.js?v=neuvillette-1" defer></script>
   <script src="js/startup.js?v=map-teleport-1" defer></script>
 </head>
 <body>
@@ -20,6 +20,13 @@
     <video id="loading-video" playsinline webkit-playsinline preload="auto" disablepictureinpicture
       src="assets/video/genshin-loading.mp4"></video>
     <button id="enter-button" class="technical-button enter-button" type="button" hidden>Войти</button>
+  </section>
+  <section id="wish-video-overlay" class="wish-video-overlay" aria-label="Анимация молитвы" hidden>
+    <video id="wish-video" src="assets/video/wish_animation.mp4" playsinline webkit-playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
+    <div id="wish-video-retry" class="wish-video-retry" hidden>
+      <p id="wish-video-error" role="status"></p>
+      <button id="wish-retry-button" class="wish-button" type="button">Совершить молитву</button>
+    </div>
   </section>
   <audio id="scene-music" src="assets/audio/beach_intro_theme.mp3" preload="auto" loop></audio>
   <main id="story" class="page" hidden>
@@ -63,6 +70,9 @@
       <div id="fontaine-rizley" class="character fontaine-person fontaine-rizley" data-fontaine-character="Ризли" hidden>
         <img id="fontaine-rizley-sprite" src="assets/images/characters/rizley_idle.png" alt="Ризли">
       </div>
+      <div id="fontaine-neuvillette" class="character fontaine-person fontaine-rizley" data-fontaine-character="Нёвиллет" hidden>
+        <img id="fontaine-neuvillette-sprite" src="assets/images/characters/neuvillette_idle.png" alt="Нёвиллет">
+      </div>
       <button id="fontaine-chest" class="fontaine-chest" type="button" aria-label="Открыть сундук" disabled hidden>
         <img src="assets/images/ui/chest.png" alt="">
       </button>
@@ -73,6 +83,10 @@
         </div>
       </div>
       <button id="fontaine-next" class="next-button" type="button">Далее ◆</button>
+      <div id="wish-action" class="wish-action" hidden>
+        <p id="wish-status" class="wish-status" role="status" hidden></p>
+        <button id="wish-button" class="wish-button" type="button">Совершить молитву</button>
+      </div>
       <div id="fontaine-note-overlay" class="fontaine-note-overlay" hidden>
         <div class="fontaine-note" role="dialog" aria-modal="true" aria-labelledby="fontaine-note-text">
           <img class="note-parchment" src="assets/images/ui/mysterious_note.png" alt="">

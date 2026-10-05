@@ -163,7 +163,27 @@ const imagePaths = [
   assetRoot + "nastya_05_grateful.png",
   assetRoot + "rizley_06_not_jealous.png",
   assetRoot + "rizley_07_rain_hint.png",
-  "assets/images/ui/water_drop_package_icon.png"
+  "assets/images/ui/water_drop_package_icon.png",
+  "assets/images/characters/neuvillette_01_greeting.png",
+  "assets/images/characters/nastya_01_confused.png",
+  "assets/images/characters/neuvillette_02_concerned.png",
+  "assets/images/characters/neuvillette_03_knowing.png",
+  "assets/images/characters/nastya_06_awkward_admission.png",
+  "assets/images/characters/neuvillette_04_my_turn.png",
+  "assets/images/characters/neuvillette_05_curious.png",
+  "assets/images/characters/neuvillette_06_proposition.png",
+  "assets/images/characters/neuvillette_07_fate.png",
+  "assets/images/characters/neuvillette_08_result.png",
+  "assets/images/characters/neuvillette_09_birthday_wish.png",
+  "assets/images/characters/nastya_05_grateful.png",
+  "assets/images/characters/neuvillette_10_farewell.png",
+  "assets/images/characters/nastya_07_already.png",
+  "assets/images/characters/nastya_04_teasing.png",
+  "assets/images/characters/neuvillette_11_next_guide.png",
+  "assets/images/characters/neuvillette_12_dry_humor.png",
+  "assets/images/characters/neuvillette_idle.png",
+  "assets/images/ui/wish_package_icon.png",
+  "assets/images/maps/map_sumeru.png"
 ];
 const sceneReady = Promise.all(imagePaths.map(preloadImage));
 
@@ -338,7 +358,8 @@ function showPackageNote(packageType) {
   const noteSymbols = {
     wolf: { file: "wolf_package_icon.png", alt: "Пиктограмма лапы" },
     flask: { file: "flask_package_icon.png", alt: "Пиктограмма флакона" },
-    water: { file: "water_drop_package_icon.png", alt: "Пиктограмма капель" }
+    water: { file: "water_drop_package_icon.png", alt: "Пиктограмма капель" },
+    wish: { file: "wish_package_icon.png", alt: "Символ молитвы" }
   };
   const symbol = noteSymbols[packageType];
   if (!symbol) throw new Error("Неизвестный символ записки: " + packageType);
@@ -351,7 +372,7 @@ function showPackageNote(packageType) {
   fontaineNoteIcon.src = "assets/images/ui/" + symbol.file;
   fontaineNoteIcon.alt = symbol.alt;
   fontaineNoteText.textContent = "Открой сверток с этим символом";
-  fontaineNoteSecondary.textContent = packageType === "water"
+  fontaineNoteSecondary.textContent = (packageType === "water" || packageType === "wish")
     ? "Нажмите “Продолжить” после вскрытия свертка."
     : originalNoteSecondaryText;
   fontaineContinue.hidden = false;
@@ -376,9 +397,9 @@ fontaineContinue.addEventListener("click", () => {
   } else if (activeNote === "flask") {
     startRizleyContinuation();
   } else if (activeNote === "water") {
-    // Граница готового сюжета: остаёмся на записке без новых событий.
-    stage = "fontaine-complete";
-    fontaineContinue.hidden = true;
+    startNeuvilletteScene();
+  } else if (activeNote === "wish") {
+    startNeuvilletteAfterWish();
   }
 });
 
@@ -413,3 +434,360 @@ function startRizleyContinuation() {
   renderDialogue(activeRizleyDialogues, rizleyDialogueIndex, rizleyDialogueUI);
   fontaineNext.focus({ preventScroll: true });
 }
+
+const fontaineNeuvillette = document.getElementById("fontaine-neuvillette");
+const wishAction = document.getElementById("wish-action");
+const wishButton = document.getElementById("wish-button");
+const wishVideoOverlay = document.getElementById("wish-video-overlay");
+const wishVideo = document.getElementById("wish-video");
+const wishVideoRetry = document.getElementById("wish-video-retry");
+const wishVideoError = document.getElementById("wish-video-error");
+const wishRetryButton = document.getElementById("wish-retry-button");
+const neuvilletteBeforeWish = [
+  {
+    "speaker": "Нёвиллет",
+    "text": "Анастасия. Позвольте прежде всего поблагодарить вас за то, что вы всё-таки добрались до меня.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_01_greeting.png"
+  },
+  {
+    "speaker": "Настя",
+    "text": "Здравствуйте...",
+    "target": "fontaine-nastya-sprite",
+    "sprite": "nastya_01_confused.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "Надеюсь, предыдущая встреча не доставила вам слишком много хлопот.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_02_concerned.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "Хотя, зная герцога, полагаю, он наверняка позволил себе несколько лишних комментариев.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_03_knowing.png"
+  },
+  {
+    "speaker": "Настя",
+    "text": "Ну... было дело.",
+    "target": "fontaine-nastya-sprite",
+    "sprite": "nastya_06_awkward_admission.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "Что ж. Теперь моя очередь.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_04_my_turn.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "Я приготовил для вас кое-что, что, надеюсь, окажется не менее приятным.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_04_my_turn.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "И знаете... мне стало любопытно.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_05_curious.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "Сегодня ведь ваш день. А значит, почему бы не позволить случаю решить, кто именно появится следующим?",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_06_proposition.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "В конце концов, иногда достаточно всего одной попытки, чтобы узнать, что приготовила вам судьба.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_07_fate.png"
+  }
+];
+const neuvilletteAfterWish = [
+  {
+    "speaker": "Нёвиллет",
+    "text": "Что ж...",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_08_result.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "Похоже, сегодня судьба решила быть к вам благосклонна.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_08_result.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "А теперь позвольте пожелать вам удачи.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_09_birthday_wish.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "Пусть она сопровождает вас не только сегодня, но и во всём, за что вы возьмётесь дальше.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_09_birthday_wish.png"
+  },
+  {
+    "speaker": "Настя",
+    "text": "Спасибо.",
+    "target": "fontaine-nastya-sprite",
+    "sprite": "nastya_05_grateful.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "И пусть судьба почаще оказывается на вашей стороне.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_09_birthday_wish.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "На этом я, пожалуй, откланяюсь.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_10_farewell.png"
+  },
+  {
+    "speaker": "Настя",
+    "text": "Уже?",
+    "target": "fontaine-nastya-sprite",
+    "sprite": "nastya_07_already.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "Мне ещё нужно вернуться к герцогу — полагаю, он уже успел заскучать без меня.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_03_knowing.png"
+  },
+  {
+    "speaker": "Настя",
+    "text": "Думаю, вы правы.",
+    "target": "fontaine-nastya-sprite",
+    "sprite": "nastya_04_teasing.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "А вам я оставлю другого провожатого.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_11_next_guide.png"
+  },
+  {
+    "speaker": "Настя",
+    "text": "И кого же?",
+    "target": "fontaine-nastya-sprite",
+    "sprite": "nastya_01_confused.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "Ищите человека, который умеет превращать свои идеи в нечто прекрасное.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_11_next_guide.png"
+  },
+  {
+    "speaker": "Нёвиллет",
+    "text": "Правда, иногда ему для этого требуется немного больше терпения, чем хотелось бы.",
+    "target": "fontaine-neuvillette-sprite",
+    "sprite": "neuvillette_12_dry_humor.png"
+  },
+  {
+    "speaker": "Настя",
+    "text": "Кажется, я догадываюсь.",
+    "target": "fontaine-nastya-sprite",
+    "sprite": "nastya_04_teasing.png"
+  }
+];
+const neuvilletteDialogueUI = {
+  ...rizleyDialogueUI,
+  characters: [fontaineNastya, fontaineNeuvillette],
+  finalLabel: "Продолжить"
+};
+let neuvilletteSequence = neuvilletteBeforeWish;
+let neuvilletteIndex = 0;
+let neuvilletteLastTap = -Infinity;
+let wishPausedForOrientation = false;
+
+function acceptNeuvilletteTap() {
+  const now = performance.now();
+  if (now - neuvilletteLastTap < 300) return false;
+  neuvilletteLastTap = now;
+  return true;
+}
+
+function showNeuvilletteComposition() {
+  activeNote = null;
+  fontaineNoteOverlay.hidden = true;
+  fontaineArrival.hidden = true;
+  fontaineChestBackground.hidden = false;
+  fontaineRizley.hidden = true;
+  fontaineVikutoria.hidden = true;
+  fontaineChest.hidden = true;
+  fontaineNastya.hidden = false;
+  fontaineNeuvillette.hidden = false;
+  fontaineNeuvillette.classList.remove("is-departing");
+  rizleyDialogue.classList.remove("dialogue-fade-out");
+  [fontaineNastya, fontaineNeuvillette, fontaineNext, rizleyDialogue].forEach(element => { element.inert = false; });
+  wishAction.hidden = true;
+  fontaineNext.hidden = false;
+  fontaineNext.disabled = false;
+  nextScene.hidden = false;
+}
+
+function startNeuvilletteScene() {
+  stage = "neuvillette-arrival";
+  showNeuvilletteComposition();
+  setFontaineSprite("fontaine-neuvillette-sprite", "neuvillette_idle.png");
+  neuvilletteDialogueUI.characters.forEach(character => character.classList.remove("is-speaking"));
+  rizleyDialogue.hidden = true;
+  fontaineNext.setAttribute("aria-label", "Начать разговор");
+  neuvilletteIndex = 0;
+  neuvilletteSequence = neuvilletteBeforeWish;
+  neuvilletteLastTap = performance.now();
+}
+
+function renderNeuvilletteDialogue() {
+  rizleyDialogue.hidden = false;
+  renderDialogue(neuvilletteSequence, neuvilletteIndex, neuvilletteDialogueUI);
+}
+
+fontaineNext.addEventListener("click", () => {
+  if (nextScene.hidden || !isLandscape() || activeNote || !stage.startsWith("neuvillette-")) return;
+  if (!["neuvillette-arrival", "neuvillette-before-wish", "neuvillette-after-wish"].includes(stage) || !acceptNeuvilletteTap()) return;
+  if (stage === "neuvillette-arrival") {
+    stage = "neuvillette-before-wish";
+    renderNeuvilletteDialogue();
+    return;
+  }
+  if (neuvilletteIndex < neuvilletteSequence.length - 1) {
+    neuvilletteIndex += 1;
+    renderNeuvilletteDialogue();
+  } else if (stage === "neuvillette-before-wish") {
+    showWishAction();
+  } else {
+    finishNeuvilletteScene();
+  }
+});
+
+function showWishAction() {
+  stage = "neuvillette-wish-transition";
+  fontaineNext.hidden = true;
+  rizleyDialogue.classList.add("dialogue-fade-out");
+  setTimeout(() => {
+    if (stage !== "neuvillette-wish-transition") return;
+    rizleyDialogue.hidden = true;
+    fontaineNastya.hidden = true;
+    fontaineNeuvillette.hidden = true;
+    stage = "neuvillette-wish-ready";
+    wishButton.disabled = false;
+    wishAction.hidden = false;
+    if (isLandscape()) wishButton.focus({ preventScroll: true });
+  }, 300);
+}
+
+function reportWishVideoFailure(error) {
+  if (stage !== "neuvillette-wish-video") return;
+  wishVideo.pause();
+  stage = "neuvillette-wish-retry";
+  wishPausedForOrientation = false;
+  wishVideoError.textContent = error && error.name === "NotAllowedError"
+    ? "Нажмите, чтобы разрешить воспроизведение со звуком."
+    : "Видео не удалось загрузить. Проверьте соединение и повторите попытку.";
+  wishRetryButton.disabled = false;
+  wishVideoRetry.hidden = false;
+}
+
+function playWishVideo(fromBeginning) {
+  stage = "neuvillette-wish-video";
+  wishAction.hidden = true;
+  wishButton.disabled = true;
+  wishRetryButton.disabled = true;
+  wishVideoRetry.hidden = true;
+  wishVideoOverlay.hidden = false;
+  wishVideoOverlay.inert = false;
+  nextScene.inert = true;
+  wishVideo.controls = false;
+  wishVideo.loop = false;
+  wishVideo.muted = false;
+  wishVideo.volume = 1;
+  if (fromBeginning) wishVideo.currentTime = 0;
+  try {
+    // Вызов непосредственно внутри пользовательского нажатия, без await.
+    const playback = wishVideo.play();
+    if (playback) playback.catch(reportWishVideoFailure);
+  } catch (error) {
+    reportWishVideoFailure(error);
+  }
+}
+
+wishButton.addEventListener("click", () => {
+  if (!isLandscape() || stage !== "neuvillette-wish-ready" || wishButton.disabled || !acceptNeuvilletteTap()) return;
+  playWishVideo(true);
+});
+
+wishRetryButton.addEventListener("click", () => {
+  if (!isLandscape() || stage !== "neuvillette-wish-retry" || wishRetryButton.disabled || !acceptNeuvilletteTap()) return;
+  const reload = !!wishVideo.error;
+  if (reload) wishVideo.load();
+  playWishVideo(reload);
+});
+
+wishVideo.addEventListener("ended", () => {
+  if (stage !== "neuvillette-wish-video") return;
+  wishVideo.pause();
+  wishVideoOverlay.hidden = true;
+  wishVideoRetry.hidden = true;
+  wishPausedForOrientation = false;
+  nextScene.inert = false;
+  showPackageNote("wish");
+});
+wishVideo.addEventListener("error", () => reportWishVideoFailure(wishVideo.error));
+
+function startNeuvilletteAfterWish() {
+  stage = "neuvillette-after-wish";
+  showNeuvilletteComposition();
+  neuvilletteSequence = neuvilletteAfterWish;
+  neuvilletteIndex = 0;
+  neuvilletteLastTap = performance.now();
+  renderNeuvilletteDialogue();
+  fontaineNext.focus({ preventScroll: true });
+}
+
+function finishNeuvilletteScene() {
+  stage = "neuvillette-departing";
+  fontaineNext.hidden = true;
+  rizleyDialogue.hidden = true;
+  fontaineNeuvillette.classList.add("is-departing");
+  setTimeout(() => {
+    if (stage !== "neuvillette-departing") return;
+    fontaineNeuvillette.hidden = true;
+    openMap("assets/images/maps/map_sumeru.png", "sumeru_pending");
+  }, 220);
+}
+
+// Следующий сюжет ещё не создан: сохраняем карту и фиксируем выбранный переход.
+registerScene("sumeru_pending", () => {
+  stage = "sumeru-pending";
+  travelMap.hidden = false;
+  teleportButton.disabled = true;
+  teleportButton.setAttribute("aria-label", "Переход в Сумеру подготовлен");
+});
+
+function updateWishOrientation() {
+  if (typeof isLandscape !== "function") return;
+  const landscape = isLandscape();
+  wishVideoOverlay.inert = !landscape;
+  if (!landscape && stage === "neuvillette-wish-video" && !wishVideo.paused) {
+    wishPausedForOrientation = true;
+    wishVideo.pause();
+  } else if (landscape && wishPausedForOrientation) {
+    wishPausedForOrientation = false;
+    if (stage === "neuvillette-wish-video") {
+      try {
+        const playback = wishVideo.play();
+        if (playback) playback.catch(reportWishVideoFailure);
+      } catch (error) { reportWishVideoFailure(error); }
+    }
+  }
+}
+window.addEventListener("resize", updateWishOrientation);
+window.addEventListener("orientationchange", updateWishOrientation);

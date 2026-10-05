@@ -192,3 +192,28 @@ body { background: #000; }
 @media (prefers-reduced-motion: reduce) {
   .fontaine-background img, .fontaine-person, .fontaine-note-overlay, .fontaine-chest.interactive img { animation: none; }
 }
+
+/* Нёвиллет использует существующие размеры персонажей и диалог Фонтейна. */
+.dialogue-fade-out { opacity: 0; transition: opacity .18s ease-out; }
+#fontaine-neuvillette.is-departing { opacity: 0; transition: opacity .22s ease-out; }
+.wish-action { position: absolute; inset: 0; z-index: 4; display: grid; place-content: center; }
+.wish-button {
+  min-height: 48px; min-width: 220px; padding: 14px 30px; margin: 0;
+  border: 1px solid #e6cf91; border-radius: 4px;
+  background: linear-gradient(#fff8e7, #e9d7ad);
+  color: #4e3d28; font-size: clamp(15px, 2vw, 22px); font-weight: 600;
+  box-shadow: 0 3px 18px #0004, 0 0 22px #ffe2a34d;
+  cursor: pointer; touch-action: manipulation;
+}
+.wish-button:hover { background: #fff8e7; }
+.wish-button:active { transform: scale(.97); }
+.wish-button:focus-visible { outline: 2px solid #fff0ba; outline-offset: 5px; }
+.wish-video-overlay { position: fixed; inset: 0; width: 100%; height: 100vh; height: 100dvh; z-index: 20; background: #000; }
+#wish-video { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+#wish-video::-webkit-media-controls { display: none !important; }
+#wish-video::-webkit-media-controls-start-playback-button { display: none !important; }
+.wish-video-retry { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 18px; padding: 24px; background: #000d; text-align: center; }
+.wish-video-retry p { margin: 0; max-width: 540px; color: #fff; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) {
+  .dialogue-fade-out, #fontaine-neuvillette.is-departing { transition: none; }
+}
