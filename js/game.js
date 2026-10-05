@@ -206,6 +206,7 @@ const imagePaths = [
   ...dialogues.map((dialogue) => assetRoot + dialogue.sprite),
   "assets/images/backgrounds/fontaine_arrival_bg.png",
   "assets/images/backgrounds/fontaine_chest_bg.png",
+  "assets/images/backgrounds/fontaine_neuvillette_bg.png",
   "assets/images/ui/chest.png",
   "assets/images/ui/mysterious_note.png",
   "assets/images/ui/wolf_package_icon.png",
@@ -309,6 +310,7 @@ teleportButton.addEventListener("click", () => {
 const fontaineBackground = document.getElementById("fontaine-background");
 const fontaineArrival = document.getElementById("fontaine-background-arrival");
 const fontaineChestBackground = document.getElementById("fontaine-background-chest");
+const fontaineNeuvilletteBackground = document.getElementById("fontaine-background-neuvillette");
 const fontaineNastya = document.getElementById("fontaine-nastya");
 const fontaineVikutoria = document.getElementById("fontaine-vikutoria");
 const fontaineRizley = document.getElementById("fontaine-rizley");
@@ -361,6 +363,7 @@ function setFontaineSprite(id, filename) {
 }
 
 function renderFontaineFrame() {
+  fontaineNeuvilletteBackground.hidden = true;
   fontaineArrival.hidden = fontaineFrame >= 3;
   fontaineChestBackground.hidden = fontaineFrame < 3;
   fontaineNastya.hidden = fontaineFrame < 2;
@@ -679,7 +682,8 @@ function showNeuvilletteComposition() {
   activeNote = null;
   fontaineNoteOverlay.hidden = true;
   fontaineArrival.hidden = true;
-  fontaineChestBackground.hidden = false;
+  fontaineChestBackground.hidden = true;
+  fontaineNeuvilletteBackground.hidden = false;
   fontaineRizley.hidden = true;
   fontaineVikutoria.hidden = true;
   fontaineChest.hidden = true;
