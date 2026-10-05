@@ -70,6 +70,65 @@ function stopSceneMusic() {
 
 
 
+// Один непрерывный трек на весь Фонтейн; видео молитвы имеет свой звук.
+const fontaineMusic = document.getElementById("fontaine-music");
+let fontaineMusicActive = false;
+let fontaineMusicSuspended = false;
+let fontaineMusicNeedsGesture = false;
+let fontaineMusicAttempt = 0;
+
+function playFontaineMusic() {
+  if (!fontaineMusicActive || fontaineMusicSuspended) return;
+  const attempt = ++fontaineMusicAttempt;
+  fontaineMusicNeedsGesture = false;
+  try {
+    const playback = fontaineMusic.play();
+    if (playback) playback.catch(error => {
+      if (!fontaineMusicActive || fontaineMusicSuspended || attempt !== fontaineMusicAttempt) return;
+      fontaineMusicNeedsGesture = error.name === "NotAllowedError";
+      if (!fontaineMusicNeedsGesture) console.warn("Не удалось воспроизвести музыку Фонтейна:", error);
+    });
+  } catch (error) {
+    fontaineMusicNeedsGesture = error.name === "NotAllowedError";
+    if (!fontaineMusicNeedsGesture) console.warn("Не удалось воспроизвести музыку Фонтейна:", error);
+  }
+}
+
+function startFontaineMusic() {
+  if (fontaineMusicActive) return;
+  fontaineMusicActive = true;
+  fontaineMusicSuspended = false;
+  fontaineMusic.currentTime = 0;
+  playFontaineMusic();
+}
+
+function pauseFontaineMusicForWish() {
+  fontaineMusicSuspended = true;
+  fontaineMusicNeedsGesture = false;
+  fontaineMusicAttempt += 1;
+  fontaineMusic.pause();
+}
+
+function resumeFontaineMusicAfterWish() {
+  fontaineMusicSuspended = false;
+  playFontaineMusic();
+}
+
+function stopFontaineMusic() {
+  if (!fontaineMusicActive) return;
+  fontaineMusicActive = false;
+  fontaineMusicSuspended = false;
+  fontaineMusicNeedsGesture = false;
+  fontaineMusicAttempt += 1;
+  fontaineMusic.pause();
+  fontaineMusic.currentTime = 0;
+}
+
+// Safari может потребовать ещё одно пользовательское нажатие для возобновления.
+document.addEventListener("click", () => {
+  if (fontaineMusicNeedsGesture && isLandscape()) playFontaineMusic();
+}, { capture: true });
+
 // Общий renderer для пляжа и последующих диалоговых сцен.
 function renderDialogue(sequence = dialogues, index = dialogueIndex, ui = {
   speaker: speakerElement, text: textElement, next: nextButton, characters,
@@ -211,6 +270,7 @@ function openMap(mapPath, nextSceneId) {
   if (!sceneRegistry.has(nextSceneId)) {
     throw new Error("Неизвестная сюжетная сцена: " + nextSceneId);
   }
+  stopFontaineMusic();
   stage = "travel";
   beachScene.hidden = true;
   nextScene.hidden = true;
@@ -320,6 +380,7 @@ function renderFontaineFrame() {
 }
 
 function startFontaineIntro() {
+  startFontaineMusic();
   stage = "fontaine-intro";
   beachScene.hidden = true;
   nextScene.hidden = false;
@@ -697,6 +758,7 @@ function reportWishVideoFailure(error) {
 }
 
 function playWishVideo(fromBeginning) {
+  pauseFontaineMusicForWish();
   stage = "neuvillette-wish-video";
   wishAction.hidden = true;
   wishButton.disabled = true;
@@ -738,6 +800,7 @@ wishVideo.addEventListener("ended", () => {
   wishVideoRetry.hidden = true;
   wishPausedForOrientation = false;
   nextScene.inert = false;
+  resumeFontaineMusicAfterWish();
   showPackageNote("wish");
 });
 wishVideo.addEventListener("error", () => reportWishVideoFailure(wishVideo.error));
