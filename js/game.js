@@ -158,7 +158,12 @@ const imagePaths = [
   assetRoot + "rizley_01_greeting.png",
   assetRoot + "rizley_02_waiting.png",
   assetRoot + "rizley_03_smug.png",
-  assetRoot + "rizley_04_gift.png"
+  assetRoot + "rizley_04_gift.png",
+  assetRoot + "rizley_05_hope_you_liked_it.png",
+  assetRoot + "nastya_05_grateful.png",
+  assetRoot + "rizley_06_not_jealous.png",
+  assetRoot + "rizley_07_rain_hint.png",
+  "assets/images/ui/water_drop_package_icon.png"
 ];
 const sceneReady = Promise.all(imagePaths.map(preloadImage));
 
@@ -233,6 +238,8 @@ const fontaineNoteOverlay = document.getElementById("fontaine-note-overlay");
 const fontaineContinue = document.getElementById("fontaine-note-continue");
 const fontaineNoteIcon = document.getElementById("fontaine-note-icon");
 const fontaineNoteText = document.getElementById("fontaine-note-text");
+const fontaineNoteSecondary = fontaineNoteOverlay.querySelector(".note-secondary");
+const originalNoteSecondaryText = fontaineNoteSecondary.textContent;
 const rizleyDialogue = document.getElementById("rizley-dialogue");
 let fontaineFrame = 1;
 let rizleyDialogueIndex = 0;
@@ -247,6 +254,18 @@ const rizleyDialogues = [
   { speaker: "Настя", text: "Я, кажется, знаю, без чьего внимания ты не обходишься.", target: "fontaine-nastya-sprite", sprite: "nastya_04_teasing.png" },
   { speaker: "Ризли", text: "Ладно, не буду задерживать. Я приготовил для тебя кое-что. Это от меня.", target: "fontaine-rizley-sprite", sprite: "rizley_04_gift.png" }
 ];
+
+const rizleyContinuationDialogues = [
+  { speaker: "Ризли", text: "С днём рождения. Дальше будет интереснее. Обещаю, скучать тебе не дадут.", target: "fontaine-rizley-sprite", sprite: "rizley_04_gift.png" },
+  { speaker: "Ризли", text: "Надеюсь, тебе понравилось.", target: "fontaine-rizley-sprite", sprite: "rizley_05_hope_you_liked_it.png" },
+  { speaker: "Настя", text: "Да, спасибо.", target: "fontaine-nastya-sprite", sprite: "nastya_05_grateful.png" },
+  { speaker: "Ризли", text: "А теперь мне придётся отправить тебя дальше. Есть тут один господин, который наверняка уже недоволен тем, что я забрал себе слишком много твоего внимания.", target: "fontaine-rizley-sprite", sprite: "rizley_03_smug.png" },
+  { speaker: "Настя", text: "Я, кажется, догадываюсь.", target: "fontaine-nastya-sprite", sprite: "nastya_04_teasing.png" },
+  { speaker: "Ризли", text: "Не переживай, я не ревную. Пусть попробует тебя впечатлить.", target: "fontaine-rizley-sprite", sprite: "rizley_06_not_jealous.png" },
+  { speaker: "Ризли", text: "Ищи того, кто предпочитает дождь любым другим погодным условиям.", target: "fontaine-rizley-sprite", sprite: "rizley_07_rain_hint.png" }
+];
+let activeRizleyDialogues = rizleyDialogues;
+
 const rizleyDialogueUI = {
   speaker: document.getElementById("rizley-speaker"),
   text: document.getElementById("rizley-text"),
@@ -305,26 +324,36 @@ fontaineNext.addEventListener("click", () => {
     if (fontaineFrame === 4) fontaineFrame = 5;
     renderFontaineFrame();
     if (fontaineFrame === 5) fontaineChest.focus({ preventScroll: true });
-  } else if (stage === "fontaine-rizley-dialogue") {
-    if (rizleyDialogueIndex === rizleyDialogues.length - 1) {
-      showPackageNote("flask");
+  } else if (stage === "fontaine-rizley-dialogue" || stage === "fontaine-rizley-continuation") {
+    if (rizleyDialogueIndex === activeRizleyDialogues.length - 1) {
+      showPackageNote(stage === "fontaine-rizley-continuation" ? "water" : "flask");
       return;
     }
     rizleyDialogueIndex += 1;
-    renderDialogue(rizleyDialogues, rizleyDialogueIndex, rizleyDialogueUI);
+    renderDialogue(activeRizleyDialogues, rizleyDialogueIndex, rizleyDialogueUI);
   }
 });
 
 function showPackageNote(packageType) {
+  const noteSymbols = {
+    wolf: { file: "wolf_package_icon.png", alt: "Пиктограмма лапы" },
+    flask: { file: "flask_package_icon.png", alt: "Пиктограмма флакона" },
+    water: { file: "water_drop_package_icon.png", alt: "Пиктограмма капель" }
+  };
+  const symbol = noteSymbols[packageType];
+  if (!symbol) throw new Error("Неизвестный символ записки: " + packageType);
   activeNote = packageType;
-  stage = packageType === "wolf" ? "fontaine-wolf-note" : "fontaine-flask-note";
+  stage = "fontaine-" + packageType + "-note";
   fontaineChest.disabled = true;
   fontaineChest.classList.remove("interactive");
   fontaineNext.hidden = true;
   rizleyDialogue.hidden = true;
-  fontaineNoteIcon.src = "assets/images/ui/" + (packageType === "wolf" ? "wolf_package_icon.png" : "flask_package_icon.png");
-  fontaineNoteIcon.alt = packageType === "wolf" ? "Пиктограмма лапы" : "Пиктограмма флакона";
+  fontaineNoteIcon.src = "assets/images/ui/" + symbol.file;
+  fontaineNoteIcon.alt = symbol.alt;
   fontaineNoteText.textContent = "Открой сверток с этим символом";
+  fontaineNoteSecondary.textContent = packageType === "water"
+    ? "Нажмите “Продолжить” после вскрытия свертка."
+    : originalNoteSecondaryText;
   fontaineContinue.hidden = false;
   fontaineContinue.disabled = false;
   [fontaineNastya, fontaineVikutoria, fontaineRizley, fontaineChest, fontaineNext, rizleyDialogue].forEach(element => { element.inert = true; });
@@ -345,6 +374,8 @@ fontaineContinue.addEventListener("click", () => {
     activeNote = null;
     launchScene("fontaine_rizley_dialogue");
   } else if (activeNote === "flask") {
+    startRizleyContinuation();
+  } else if (activeNote === "water") {
     // Граница готового сюжета: остаёмся на записке без новых событий.
     stage = "fontaine-complete";
     fontaineContinue.hidden = true;
@@ -352,6 +383,7 @@ fontaineContinue.addEventListener("click", () => {
 });
 
 function startRizleyDialogue() {
+  activeRizleyDialogues = rizleyDialogues;
   stage = "fontaine-rizley-dialogue";
   nextScene.hidden = false;
   activeNote = null;
@@ -362,9 +394,22 @@ function startRizleyDialogue() {
   renderFontaineFrame();
   [fontaineNastya, fontaineVikutoria, fontaineRizley, fontaineChest, fontaineNext, rizleyDialogue].forEach(element => { element.inert = false; });
   fontaineNext.hidden = false;
-  renderDialogue(rizleyDialogues, rizleyDialogueIndex, rizleyDialogueUI);
+  renderDialogue(activeRizleyDialogues, rizleyDialogueIndex, rizleyDialogueUI);
   fontaineNext.focus({ preventScroll: true });
 }
 
 registerScene("fontaine_rizley_intro", startFontaineIntro);
 registerScene("fontaine_rizley_dialogue", startRizleyDialogue);
+
+function startRizleyContinuation() {
+  stage = "fontaine-rizley-continuation";
+  activeNote = null;
+  activeRizleyDialogues = rizleyContinuationDialogues;
+  rizleyDialogueIndex = 0;
+  // Возвращаем ту же сцену и сохранённые спрайты без промежуточного экрана.
+  renderFontaineFrame();
+  [fontaineNastya, fontaineVikutoria, fontaineRizley, fontaineChest, fontaineNext, rizleyDialogue].forEach(element => { element.inert = false; });
+  fontaineNext.hidden = false;
+  renderDialogue(activeRizleyDialogues, rizleyDialogueIndex, rizleyDialogueUI);
+  fontaineNext.focus({ preventScroll: true });
+}
