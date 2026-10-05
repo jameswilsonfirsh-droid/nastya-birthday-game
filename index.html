@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Настя и Викутория</title>
-  <link rel="stylesheet" href="css/style.css?v=fontaine-chest-1">
-  <script src="js/game.js?v=fontaine-chest-1" defer></script>
+  <link rel="stylesheet" href="css/style.css?v=fontaine-gifts-2">
+  <script src="js/game.js?v=fontaine-gifts-2" defer></script>
   <script src="js/startup.js?v=map-teleport-1" defer></script>
 </head>
 <body>
@@ -50,20 +50,40 @@
       </button>
     </section>
     <section id="next-scene" class="game-window fontaine-scene" aria-label="Фонтейн" hidden>
-      <div id="fontaine-background" class="fontaine-background" aria-hidden="true"></div>
-      <div id="fontaine-nastya" class="fontaine-person fontaine-nastya" aria-label="Настя, нейтральное состояние" hidden><span>Настя</span></div>
-      <div id="fontaine-vikutoria" class="fontaine-person fontaine-vikutoria" aria-label="Викутория, нейтральное состояние" hidden><span>Викутория</span><i class="pointing-arm" aria-hidden="true"></i></div>
-      <div id="fontaine-rizley" class="fontaine-person fontaine-rizley" aria-label="Временный персонаж Ризли" hidden><span>Ризли</span></div>
-      <button id="fontaine-chest" class="fontaine-chest" type="button" aria-label="Открыть сундук" disabled hidden><span aria-hidden="true"></span></button>
-      <button id="fontaine-next" class="next-button" type="button">Далее ◆</button>
-      <div id="fontaine-note-overlay" class="fontaine-note-overlay" hidden>
-        <div class="fontaine-note" role="dialog" aria-modal="true" aria-label="Записка из сундука" tabindex="-1">
-          <p>Откройте пакет с пиктограммой волка.</p>
-          <p>Нажмите «Продолжить» после вскрытия пакета.</p>
-          <button id="fontaine-note-continue" type="button">Продолжить</button>
+      <div id="fontaine-background" class="fontaine-background" aria-hidden="true">
+        <img id="fontaine-background-arrival" src="assets/images/backgrounds/fontaine_arrival_bg.png" alt="">
+        <img id="fontaine-background-chest" src="assets/images/backgrounds/fontaine_chest_bg.png" alt="" hidden>
+      </div>
+      <div id="fontaine-nastya" class="character fontaine-person fontaine-nastya" data-fontaine-character="Настя" hidden>
+        <img id="fontaine-nastya-sprite" src="assets/images/characters/nastya_idle.png" alt="Настя">
+      </div>
+      <div id="fontaine-vikutoria" class="character fontaine-person fontaine-vikutoria" data-fontaine-character="Викутория" hidden>
+        <img id="fontaine-vikutoria-sprite" src="assets/images/characters/vikutoria_idle.png" alt="Викутория">
+      </div>
+      <div id="fontaine-rizley" class="character fontaine-person fontaine-rizley" data-fontaine-character="Ризли" hidden>
+        <img id="fontaine-rizley-sprite" src="assets/images/characters/rizley_idle.png" alt="Ризли">
+      </div>
+      <button id="fontaine-chest" class="fontaine-chest" type="button" aria-label="Открыть сундук" disabled hidden>
+        <img src="assets/images/ui/chest.png" alt="">
+      </button>
+      <div id="rizley-dialogue" class="dialogue-box" hidden>
+        <div class="dialogue-content" aria-live="polite" aria-atomic="true">
+          <h2 id="rizley-speaker" class="dialogue-speaker"></h2>
+          <p id="rizley-text" class="dialogue-text"></p>
         </div>
       </div>
-      <div id="rizley-dialogue" class="dialogue-box" aria-label="Диалоговая сцена с Ризли, реплики будут добавлены позже" hidden></div>
+      <button id="fontaine-next" class="next-button" type="button">Далее ◆</button>
+      <div id="fontaine-note-overlay" class="fontaine-note-overlay" hidden>
+        <div class="fontaine-note" role="dialog" aria-modal="true" aria-labelledby="fontaine-note-text">
+          <img class="note-parchment" src="assets/images/ui/mysterious_note.png" alt="">
+          <div class="note-content">
+            <img id="fontaine-note-icon" src="assets/images/ui/wolf_package_icon.png" alt="Пиктограмма волка">
+            <p id="fontaine-note-text">Открой пакет с пиктограммой волка.</p>
+            <p class="note-secondary">Нажмите “Продолжить” после вскрытия пакета.</p>
+            <button id="fontaine-note-continue" type="button">Продолжить</button>
+          </div>
+        </div>
+      </div>
     </section>
     <noscript>Включите JavaScript, чтобы начать разговор.</noscript>
   </main>
