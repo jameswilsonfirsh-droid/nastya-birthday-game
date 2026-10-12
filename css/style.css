@@ -16,7 +16,7 @@ body { position: fixed; inset: 0; margin: 0; width: 100%; height: 100vh; height:
 .character-left { left: 12%; bottom: 6%; width: 44%; height: 90%; }
 .character-right { left: 55%; bottom: 43%; width: 28%; height: 45%; }
 .character img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center bottom; background: transparent; transition: filter .2s; }
-.character.is-speaking img { filter: drop-shadow(0 0 3px #fff4cba6) drop-shadow(0 0 8px #ffe2a24d); }
+.character.is-speaking img { filter: drop-shadow(0 0 3px var(--glow-gold-edge)) drop-shadow(0 0 8px var(--glow-gold-soft)); }
 .dialogue-box {
   position: absolute;
   inset: auto 0 0;
@@ -138,15 +138,10 @@ body { background: #000; }
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 0 8px #8ceaffb3) drop-shadow(0 0 20px #76cfff80);
-  animation: teleport-pulse 2.4s ease-in-out infinite;
   transition: filter .2s;
 }
-.teleport-button:hover img, .teleport-button:focus-visible img {
-  filter: drop-shadow(0 0 12px #c0f8ff) drop-shadow(0 0 26px #76cfffaa);
-}
 .teleport-button:active { transform: translate(-50%, -50%) scale(.94); }
-.teleport-button:focus-visible { outline: 2px solid #baf3ff; outline-offset: 6px; border-radius: 50%; }
+.teleport-button:focus-visible { outline: 2px solid var(--glow-gold); outline-offset: 6px; border-radius: 50%; }
 @keyframes teleport-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.07); }
@@ -172,10 +167,7 @@ body { background: #000; }
 .fontaine-chest { position: absolute; left: 48%; bottom: 19%; width: 16%; height: 20%; min-width: 44px; min-height: 44px; margin: 0; padding: 5px; z-index: 2; border: 0; background: transparent; -webkit-tap-highlight-color: transparent; }
 .fontaine-chest img { width: 100%; height: 100%; object-fit: contain; }
 .fontaine-chest:disabled { cursor: default; }
-.fontaine-chest.interactive img { animation: chest-glow 2s ease-in-out infinite; }
-.fontaine-chest.interactive:hover img, .fontaine-chest.interactive:focus-visible img { filter: drop-shadow(0 0 12px #ffe3a6aa); }
 .fontaine-chest.interactive:active { transform: scale(.96); }
-@keyframes chest-glow { 0%, 100% { filter: drop-shadow(0 0 4px #ffe3a650); } 50% { filter: drop-shadow(0 0 12px #ffe3a69c); } }
 .fontaine-note-overlay { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: #0006; animation: fontaine-fade .2s ease-out; }
 .fontaine-note { position: relative; height: 92%; max-height: 560px; aspect-ratio: 1195 / 1316; color: #493422; filter: drop-shadow(0 6px 14px #0006); }
 .note-parchment { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -238,7 +230,7 @@ body { background: #000; }
 .ending-zhongli { left: 59%; width: 32%; height: var(--story-adult-height); }
 .liyue-found-note { position: absolute; z-index: 1; left: 34%; bottom: 20%; width: 10%; height: 11.3%; margin: 0; padding: 0; transition: transform .45s ease, bottom .45s ease, left .45s ease, width .45s ease, height .45s ease; }
 .liyue-found-note.is-close { left: 43%; width: 15%; height: 17%; transform: scale(2); bottom: 36%; }
-.liyue-found-note:not(:disabled) { cursor: pointer; filter: drop-shadow(0 0 7px #ffe2a377); }
+.liyue-found-note:not(:disabled) { cursor: pointer; }
 .liyue-found-note:focus-visible { outline: 2px solid #fff1c6; outline-offset: 5px; }
 .ending-illustration { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
 .ending-scene-fade { opacity: 0; transition: opacity .35s ease; }
@@ -263,3 +255,32 @@ body { background: #000; }
 .note-content button { min-height: 44px; }
 .next-button { min-height: 32px; }
 .fontaine-vikutoria { height: calc(var(--story-nastya-height) / 2); }
+
+/* Общая золотистая подсветка кликабельных PNG по их прозрачному контуру. */
+:root {
+  --glow-gold: #ffd069;
+  --glow-gold-edge: #ffd069d9;
+  --glow-gold-soft: #ffd06966;
+}
+.interactive-object:not(:disabled) > img {
+  filter: drop-shadow(0 0 3px var(--glow-gold-edge)) drop-shadow(0 0 8px var(--glow-gold-soft)) drop-shadow(0 0 18px #ffd06940);
+  animation: interactive-gold-glow 2s ease-in-out infinite;
+  transition: filter .2s ease;
+}
+.teleport-button:not(:disabled) > img {
+  animation: interactive-gold-glow 2s ease-in-out infinite, teleport-pulse 2.4s ease-in-out infinite;
+}
+.interactive-object:not(:disabled):hover > img,
+.interactive-object:not(:disabled):focus-visible > img,
+.interactive-object:not(:disabled):active > img {
+  animation: none;
+  filter: drop-shadow(0 0 5px #ffe6aad9) drop-shadow(0 0 12px var(--glow-gold-edge)) drop-shadow(0 0 26px var(--glow-gold-soft));
+}
+.interactive-object:disabled > img { animation: none; filter: none; }
+@keyframes interactive-gold-glow {
+  0%, 100% { filter: drop-shadow(0 0 3px var(--glow-gold-edge)) drop-shadow(0 0 8px var(--glow-gold-soft)) drop-shadow(0 0 18px #ffd06940); }
+  50% { filter: drop-shadow(0 0 5px #ffe6aad9) drop-shadow(0 0 12px var(--glow-gold-edge)) drop-shadow(0 0 26px var(--glow-gold-soft)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .interactive-object > img { animation: none !important; }
+}
