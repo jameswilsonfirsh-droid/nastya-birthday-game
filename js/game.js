@@ -247,6 +247,8 @@ const imagePaths = [
   "assets/images/ui/feather_package_icon.png",
   "assets/images/ui/book_package_icon.png",
   "assets/images/ui/house_package_icon.png",
+  "assets/images/ui/mora_package_icon.png",
+  "assets/images/ui/tea_package_icon.png",
   "assets/images/maps/map_liyue.png",
   "assets/images/maps/map_sumeru.png"
 ];
@@ -431,13 +433,17 @@ function showPackageNote(packageType) {
     wish: { file: "wish_package_icon.png", alt: "Символ молитвы" },
     feather: { file: "feather_package_icon.png", alt: "Символ пера" },
     book: { file: "book_package_icon.png", alt: "Символ книги" },
-    house: { file: "house_package_icon.png", alt: "Символ дома" }
+    house: { file: "house_package_icon.png", alt: "Символ дома" },
+    mora: { file: "mora_package_icon.png", alt: "Символ Моры" },
+    tea: { file: "tea_package_icon.png", alt: "Символ чашки" }
   };
   const symbol = noteSymbols[packageType];
   if (!symbol) throw new Error("Неизвестный символ записки: " + packageType);
   const sumeruGift = ["feather", "book", "house"].includes(packageType);
   activeNote = packageType;
-  stage = (sumeruGift ? "sumeru-" : "fontaine-") + packageType + "-note";
+  const liyueGift = ["mora", "tea"].includes(packageType);
+  stage = (liyueGift ? "liyue-" : sumeruGift ? "sumeru-" : "fontaine-") + packageType + "-note";
+  if (liyueGift) endingCharacters.forEach(actor => { actor.inert = true; });
   if (sumeruGift) sumeruCharacters.forEach(actor => { actor.inert = true; });
   fontaineChest.disabled = true;
   fontaineChest.classList.remove("interactive");
@@ -480,6 +486,10 @@ fontaineContinue.addEventListener("click", () => {
     startSumeruDialogue("argument");
   } else if (activeNote === "house") {
     startSumeruDialogue("after");
+  } else if (activeNote === "mora") {
+    startEndingDialogue("main");
+  } else if (activeNote === "tea") {
+    startEndingDialogue("final");
   }
 });
 
@@ -1383,10 +1393,553 @@ function finishSumeruScene() {
   }, 220);
 }
 
-// Пока лишь подготовленный маршрут; сцену Чжун Ли здесь не создаём.
-registerScene("liyue_pending", () => {
-  stage = "liyue-pending";
-  travelMap.hidden = false;
-  teleportButton.disabled = true;
-  teleportButton.setAttribute("aria-label", "Переход в Ли Юэ подготовлен");
+// Продолжаем существующий маршрут телепорта Ли Юэ.
+registerScene("liyue_pending", startLiyueScene);
+
+
+// Ли Юэ и завершение главы: переиспользуем renderer и placeholder-адаптер Сумеру.
+Object.assign(sumeruVisuals, {
+  "zhongli_01_greeting": {
+    "name": "Чжун Ли",
+    "label": "приветствие",
+    "src": null
+  },
+  "zhongli_02_observant": {
+    "name": "Чжун Ли",
+    "label": "заинтересованность",
+    "src": null
+  },
+  "zhongli_03_reassuring": {
+    "name": "Чжун Ли",
+    "label": "доброжелательность",
+    "src": null
+  },
+  "zhongli_04_birthday": {
+    "name": "Чжун Ли",
+    "label": "поздравление",
+    "src": null
+  },
+  "zhongli_05_gift": {
+    "name": "Чжун Ли",
+    "label": "подарок",
+    "src": null
+  },
+  "zhongli_06_reflective": {
+    "name": "Чжун Ли",
+    "label": "задумчивость",
+    "src": null
+  },
+  "zhongli_07_hope": {
+    "name": "Чжун Ли",
+    "label": "тёплая улыбка",
+    "src": null
+  },
+  "zhongli_08_pleased": {
+    "name": "Чжун Ли",
+    "label": "удовлетворение",
+    "src": null
+  },
+  "zhongli_09_gentle": {
+    "name": "Чжун Ли",
+    "label": "мягкая улыбка",
+    "src": null
+  },
+  "zhongli_10_warm_wish": {
+    "name": "Чжун Ли",
+    "label": "забота",
+    "src": null
+  },
+  "zhongli_11_invitation": {
+    "name": "Чжун Ли",
+    "label": "приглашение",
+    "src": null
+  },
+  "zhongli_12_osmanthus": {
+    "name": "Чжун Ли",
+    "label": "османтус",
+    "src": null
+  },
+  "zhongli_13_tea": {
+    "name": "Чжун Ли",
+    "label": "чай, самоирония",
+    "src": null
+  },
+  "zhongli_14_exception": {
+    "name": "Чжун Ли",
+    "label": "исключение",
+    "src": null
+  }
 });
+const endingDialogues = {
+  "main": [
+    {
+      "speaker": "Чжун Ли",
+      "text": "Анастасия. Рад наконец с вами встретиться.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_01_greeting"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Здравствуйте...",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_01_confused.png"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Полагаю, путь до Ли Юэ оказался для вас достаточно насыщенным.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_02_observant"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Это ещё мягко сказано.",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_06_awkward_admission.png"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Что ж, тогда, надеюсь, здесь вы сможете немного передохнуть.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_03_reassuring",
+      "pause": true
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "С днём рождения.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_04_birthday"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Желаю вам побольше спокойных вечеров, приятных встреч и вещей, которыми действительно хочется дорожить.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_04_birthday"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Спасибо.",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_05_grateful.png"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Я приготовил для вас кое-что небольшое.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_05_gift"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Думаю, вы уже догадались, что последний подарок от меня.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_05_gift"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Открывайте. Я подожду.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_05_gift"
+    }
+  ],
+  "final": [
+    {
+      "speaker": "Чжун Ли",
+      "text": "Что ж… похоже, мы действительно добрались до конца.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_06_reflective"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Уже?",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_07_already.png"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Похоже, что так.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_06_reflective"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Надеюсь, этот небольшой подарок вам понравился.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_07_hope"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Да. Мне всё очень понравилось.",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_05_grateful.png"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Это приятно слышать.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_08_pleased",
+      "pause": true
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Анастасия… красивое имя.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_09_gentle"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Спасибо.",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_05_grateful.png"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Но я бы предпочёл, чтобы рядом с вами было поменьше холода и побольше тепла.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_10_warm_wish"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Звучит как хорошее пожелание.",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_02_done.png"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Тогда позвольте мне сегодня немного о вас позаботиться.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_11_invitation"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "И угостить османтусовым…",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_12_osmanthus",
+      "pause": true
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Чаем.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_13_tea"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Чаем?",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_01_confused.png"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "Возможно, сегодня я решил сделать небольшое исключение.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_14_exception"
+    }
+  ],
+  "find": [
+    {
+      "speaker": "Викутория",
+      "text": "Смотри, там что-то лежит.",
+      "target": "sumeru-vikutoria-sprite",
+      "sprite": "vikutoria_pointing_chest.png"
+    },
+    {
+      "speaker": "Викутория",
+      "text": "Это что, Мора?",
+      "target": "sumeru-vikutoria-sprite",
+      "sprite": "vikutoria_pointing_chest.png"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Похоже на то.",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_02_done.png"
+    }
+  ],
+  "tea": [
+    {
+      "speaker": "Чжун Ли",
+      "text": "С днём рождения.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_14_exception"
+    },
+    {
+      "speaker": "Чжун Ли",
+      "text": "И пусть этот год будет к вам благосклонен.",
+      "target": "ending-zhongli-sprite",
+      "sprite": "zhongli_14_exception"
+    }
+  ]
+};
+// Будущие изображения подключаются только здесь; null не вызывает загрузку.
+const endingVisuals = {
+  LIYUE_ARRIVAL_BG: { label: "ЛИ ЮЭ — ПРИБЫТИЕ", src: null },
+  LIYUE_MORA_BG: { label: "ЛИ ЮЭ — ЗАПИСКА С МОРОЙ", src: null },
+  LIYUE_ZHONGLI_BG: { label: "ЛИ ЮЭ — ВСТРЕЧА С ЧЖУН ЛИ", src: null },
+  CHENYU_TEA_SCENE: { label: "ЧЭНЬЮЙ — ЧАЕПИТИЕ В БЕСЕДКЕ", src: null },
+  FINAL_GROUP_PHOTO: { label: "ФИНАЛЬНОЕ ОБЩЕЕ ФОТО", src: null },
+  LIYUE_MORA_NOTE: { label: "Лист бумаги с монетой Мора", src: null }
+};
+const endingZhongli = document.getElementById("ending-zhongli");
+const endingCharacters = [sumeruNastya, sumeruVikutoria, endingZhongli];
+const foundMoraNote = document.getElementById("liyue-found-note");
+const endingGroupLayout = document.getElementById("ending-group-layout");
+const endingFinalScreen = document.getElementById("ending-final-screen");
+const endingDialogueUI = {
+  ...rizleyDialogueUI, characters: endingCharacters, setSprite: setSumeruSprite
+};
+let endingPart = "";
+let endingIndex = 0;
+let endingLastTap = -Infinity;
+let endingTimer = null;
+
+// Паузы и финальный кадр не проходят под портретным экраном или в скрытой вкладке.
+function endingDelay(milliseconds, callback) {
+  if (endingTimer) clearTimeout(endingTimer.id);
+  endingTimer = { remaining: milliseconds, callback, stage, started: 0, id: null };
+  updateEndingTimer();
+}
+
+function updateEndingTimer() {
+  if (!endingTimer || typeof isLandscape !== "function") return;
+  const timer = endingTimer;
+  if (timer.stage !== stage) {
+    clearTimeout(timer.id);
+    endingTimer = null;
+    return;
+  }
+  const visible = isLandscape() && !document.hidden;
+  if (!visible && timer.id !== null) {
+    clearTimeout(timer.id);
+    timer.remaining = Math.max(0, timer.remaining - (performance.now() - timer.started));
+    timer.id = null;
+  } else if (visible && timer.id === null) {
+    timer.started = performance.now();
+    timer.id = setTimeout(() => {
+      if (endingTimer !== timer || stage !== timer.stage) return;
+      endingTimer = null;
+      timer.callback();
+    }, timer.remaining);
+  }
+}
+window.addEventListener("resize", updateEndingTimer);
+window.addEventListener("orientationchange", updateEndingTimer);
+document.addEventListener("visibilitychange", updateEndingTimer);
+
+function acceptEndingTap() {
+  const now = performance.now();
+  if (now - endingLastTap < 300) return false;
+  endingLastTap = now;
+  return true;
+}
+
+function showEndingVisual(id) {
+  const visual = endingVisuals[id];
+  setSumeruBackground(visual.label);
+  sumeruBackground.dataset.assetId = id;
+  sumeruLocation.textContent = visual.label + " · " + id;
+  let image = sumeruBackground.querySelector("img");
+  if (visual.src) {
+    if (!image) {
+      image = document.createElement("img");
+      image.className = "ending-illustration";
+      sumeruBackground.prepend(image);
+    }
+    image.src = visual.src;
+    image.alt = visual.label;
+    image.hidden = false;
+    sumeruLocation.hidden = true;
+  } else {
+    if (image) image.hidden = true;
+    sumeruLocation.hidden = false;
+  }
+  endingGroupLayout.hidden = id !== "FINAL_GROUP_PHOTO" || !!visual.src;
+}
+
+function startLiyueScene() {
+  stage = "liyue-arrival";
+  nextScene.hidden = false;
+  nextScene.setAttribute("aria-label", "Ли Юэ");
+  nextScene.classList.add("liyue-scene");
+  fontaineBackground.hidden = true;
+  [fontaineNastya, fontaineVikutoria, fontaineRizley, fontaineNeuvillette, fontaineChest, sumeruKaveh, sumeruAlhaitham].forEach(actor => { actor.hidden = true; });
+  sumeruActors.hidden = false;
+  sumeruActors.classList.remove("sumeru-departing");
+  endingCharacters.forEach(actor => {
+    actor.hidden = true;
+    actor.inert = false;
+    actor.classList.remove("is-speaking");
+  });
+  activeNote = null;
+  fontaineNoteOverlay.hidden = true;
+  wishAction.hidden = true;
+  rizleyDialogue.hidden = true;
+  rizleyDialogue.classList.remove("dialogue-fade-out");
+  foundMoraNote.hidden = true;
+  foundMoraNote.disabled = true;
+  foundMoraNote.classList.remove("is-close");
+  foundMoraNote.dataset.assetId = "LIYUE_MORA_NOTE";
+  const itemVisual = endingVisuals.LIYUE_MORA_NOTE;
+  let itemImage = foundMoraNote.querySelector("img");
+  foundMoraNote.querySelectorAll("span").forEach(element => { element.hidden = !!itemVisual.src; });
+  if (itemVisual.src) {
+    if (!itemImage) {
+      itemImage = document.createElement("img");
+      itemImage.className = "ending-illustration";
+      foundMoraNote.append(itemImage);
+    }
+    itemImage.src = itemVisual.src;
+    itemImage.alt = itemVisual.label;
+    itemImage.hidden = false;
+  } else if (itemImage) itemImage.hidden = true;
+  endingFinalScreen.hidden = true;
+  showEndingVisual("LIYUE_ARRIVAL_BG");
+  setSumeruSprite("sumeru-nastya-sprite", "nastya_idle.png");
+  setSumeruSprite("sumeru-vikutoria-sprite", "vikutoria_idle.png");
+  setSumeruSprite("ending-zhongli-sprite", "zhongli_01_greeting");
+  fontaineNext.hidden = false;
+  fontaineNext.disabled = false;
+  fontaineNext.inert = false;
+  fontaineNext.textContent = "Далее ◆";
+  fontaineNext.setAttribute("aria-label", "Показать Настю и Викуторию");
+  endingLastTap = performance.now();
+}
+
+function renderEndingLine(row, finalLabel) {
+  rizleyDialogue.hidden = false;
+  rizleyDialogue.inert = false;
+  fontaineNext.hidden = false;
+  fontaineNext.inert = false;
+  fontaineNext.disabled = false;
+  const illustration = endingPart === "tea";
+  renderDialogue([row], 0, {
+    ...endingDialogueUI,
+    finalLabel,
+    ...(illustration ? { characters: [], setSprite() {} } : {})
+  });
+  if (row.pause) {
+    fontaineNext.disabled = true;
+    endingDelay(750, () => { fontaineNext.disabled = false; });
+  }
+}
+
+function startEndingDialogue(part) {
+  activeNote = null;
+  fontaineNoteOverlay.hidden = true;
+  foundMoraNote.hidden = true;
+  endingCharacters.forEach(actor => { actor.inert = false; });
+  sumeruNastya.hidden = false;
+  sumeruVikutoria.hidden = true;
+  endingZhongli.hidden = false;
+  showEndingVisual("LIYUE_ZHONGLI_BG");
+  endingPart = part;
+  endingIndex = 0;
+  stage = "liyue-dialogue-" + part;
+  renderEndingLine(endingDialogues[part][0], part === "main" ? "Открыть подарок с чашкой" : "Перейти к чаепитию");
+  endingLastTap = performance.now();
+  fontaineNext.focus({ preventScroll: true });
+}
+
+fontaineNext.addEventListener("click", () => {
+  if (nextScene.hidden || !isLandscape() || activeNote || fontaineNext.disabled) return;
+  if (!["liyue-arrival", "liyue-idle", "liyue-look", "liyue-mora-question", "liyue-mora-answer", "liyue-dialogue-main", "liyue-dialogue-final", "ending-tea"].includes(stage)) return;
+  if (!acceptEndingTap()) return;
+  if (stage === "liyue-arrival") {
+    stage = "liyue-idle";
+    sumeruNastya.hidden = false;
+    sumeruVikutoria.hidden = false;
+    fontaineNext.setAttribute("aria-label", "Продолжить");
+  } else if (stage === "liyue-idle") {
+    stage = "liyue-look";
+    renderEndingLine(endingDialogues.find[0], "Приблизиться к находке");
+  } else if (stage === "liyue-look") {
+    stage = "liyue-mora-question";
+    showEndingVisual("LIYUE_MORA_BG");
+    foundMoraNote.hidden = false;
+    renderEndingLine(endingDialogues.find[1], "Следующая реплика");
+  } else if (stage === "liyue-mora-question") {
+    stage = "liyue-mora-answer";
+    renderEndingLine(endingDialogues.find[2], "Рассмотреть записку");
+  } else if (stage === "liyue-mora-answer") {
+    stage = "liyue-mora-zoom";
+    rizleyDialogue.hidden = true;
+    fontaineNext.hidden = true;
+    endingCharacters.forEach(actor => { actor.hidden = true; });
+    foundMoraNote.classList.add("is-close");
+    endingDelay(450, () => {
+      stage = "liyue-mora-interactive";
+      foundMoraNote.disabled = false;
+      foundMoraNote.focus({ preventScroll: true });
+    });
+  } else if (endingIndex < endingDialogues[endingPart].length - 1) {
+    endingIndex += 1;
+    renderEndingLine(endingDialogues[endingPart][endingIndex], endingPart === "main" ? "Открыть подарок с чашкой" : endingPart === "final" ? "Перейти к чаепитию" : "Показать общее фото");
+  } else if (endingPart === "main") {
+    showPackageNote("tea");
+  } else if (endingPart === "final") {
+    startChenyuTeaTransition();
+  } else {
+    startGroupPhotoTransition();
+  }
+});
+
+foundMoraNote.addEventListener("click", () => {
+  if (nextScene.hidden || !isLandscape() || stage !== "liyue-mora-interactive" || foundMoraNote.disabled || !acceptEndingTap()) return;
+  foundMoraNote.disabled = true;
+  showPackageNote("mora");
+});
+
+function fadeEndingScene(callback) {
+  rizleyDialogue.hidden = true;
+  fontaineNext.hidden = true;
+  sumeruBackground.classList.add("ending-scene-fade");
+  sumeruActors.classList.add("sumeru-departing");
+  endingZhongli.classList.add("ending-scene-fade");
+  endingDelay(350, () => {
+    endingCharacters.forEach(actor => { actor.hidden = true; });
+    sumeruBackground.classList.remove("ending-scene-fade");
+    sumeruActors.classList.remove("sumeru-departing");
+    endingZhongli.classList.remove("ending-scene-fade");
+    callback();
+  });
+}
+
+function startChenyuTeaTransition() {
+  stage = "ending-tea-transition";
+  fadeEndingScene(() => {
+    stage = "ending-tea";
+    endingPart = "tea";
+    endingIndex = 0;
+    showEndingVisual("CHENYU_TEA_SCENE");
+    renderEndingLine(endingDialogues.tea[0], "Следующее пожелание");
+    endingLastTap = performance.now();
+  });
+}
+
+function startGroupPhotoTransition() {
+  stage = "ending-photo-transition";
+  fadeEndingScene(() => {
+    stage = "ending-photo";
+    showEndingVisual("FINAL_GROUP_PHOTO");
+    endingDelay(4000, startFinalFade);
+  });
+}
+
+function startFinalFade() {
+  stage = "ending-fade";
+  sumeruBackground.classList.add("ending-final-fade");
+  endingGroupLayout.classList.add("ending-final-fade");
+  endingDelay(900, () => {
+    stage = "chapter-complete";
+    sumeruBackground.hidden = true;
+    endingGroupLayout.hidden = true;
+    endingFinalScreen.hidden = false;
+    rizleyDialogue.hidden = true;
+    fontaineNext.hidden = true;
+    fontaineNext.disabled = true;
+    foundMoraNote.hidden = true;
+    foundMoraNote.disabled = true;
+    fontaineContinue.disabled = true;
+    nextButton.disabled = true;
+    teleportButton.disabled = true;
+    nextScene.setAttribute("aria-label", "Продолжение следует…");
+  });
+}
