@@ -98,6 +98,7 @@ startupButton.addEventListener("click", () => {
       try {
         audioContext = new AudioContextClass();
         audioContext.resume().catch(() => {});
+        unlockBackgroundMusic(audioContext);
       } catch { /* Видео может воспроизводить звук без Web Audio. */ }
     }
     playLoadingVideo();

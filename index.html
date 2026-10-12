@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Настя и Викутория</title>
-  <link rel="stylesheet" href="css/style.css?v=chapter-finale-1">
-  <script src="js/game.js?v=chapter-finale-1" defer></script>
-  <script src="js/startup.js?v=map-teleport-1" defer></script>
+  <link rel="stylesheet" href="css/style.css?v=complete-assets-1">
+  <script src="js/game.js?v=complete-assets-1" defer></script>
+  <script src="js/startup.js?v=complete-assets-1" defer></script>
 </head>
 <body>
   <div id="orientation-screen" class="technical-screen orientation-screen">
@@ -28,9 +28,13 @@
       <button id="wish-retry-button" class="wish-button" type="button">Совершить молитву</button>
     </div>
   </section>
+  <audio id="sumeru-music" src="assets/audio/sumeru_theme.mp3" preload="auto" loop></audio>
+  <audio id="liyue-music" src="assets/audio/liyue_theme.mp3" preload="auto" loop></audio>
+  <audio id="chenyu-music" src="assets/audio/chenyu_final_theme.mp3" preload="auto" loop></audio>
   <audio id="fontaine-music" src="assets/audio/fontaine_theme.mp3" preload="auto" loop></audio>
   <audio id="scene-music" src="assets/audio/beach_intro_theme.mp3" preload="auto" loop></audio>
   <main id="story" class="page" hidden>
+    <button id="music-toggle" class="music-toggle" type="button" aria-label="Отключить или включить фоновую музыку" aria-pressed="false" hidden>Музыка: вкл.</button>
     <section id="beach-scene" class="game-window" aria-label="Первая сцена: пляж">
       <div class="background" aria-hidden="true">
         <img id="background" src="assets/images/backgrounds/beach.png" alt="">
@@ -76,8 +80,8 @@
         <img id="fontaine-neuvillette-sprite" src="assets/images/characters/neuvillette_idle.png" alt="Нёвиллет">
       </div>
 
-      <div id="sumeru-background" class="scene-placeholder-background" hidden>
-        <span id="sumeru-location"></span>
+      <div id="sumeru-background" class="scene-art-background" hidden>
+        <img id="region-background-image" src="assets/images/backgrounds/sumeru_arrival_bg.png" alt="" decoding="async">
       </div>
       <div id="sumeru-actors" hidden>
         <div id="sumeru-nastya" class="character sumeru-person sumeru-nastya" data-fontaine-character="Настя" hidden>
@@ -87,32 +91,19 @@
           <img id="sumeru-vikutoria-sprite" src="assets/images/characters/vikutoria_idle.png" alt="Викутория — летающая спутница">
         </div>
         <div id="sumeru-kaveh" class="character sumeru-person sumeru-kaveh" data-fontaine-character="Кавех" hidden>
-          <div id="sumeru-kaveh-sprite" class="scene-placeholder-character" role="img">
-            <span class="placeholder-head" aria-hidden="true"></span><span class="placeholder-body" aria-hidden="true"></span>
-            <div class="placeholder-caption"><strong></strong><small></small></div>
-          </div>
+          <img id="sumeru-kaveh-sprite" src="assets/images/characters/kaveh_01_greeting.png" alt="Кавех">
         </div>
         <div id="sumeru-alhaitham" class="character sumeru-person sumeru-alhaitham" data-fontaine-character="Аль-Хайтам" hidden>
-          <div id="sumeru-alhaitham-sprite" class="scene-placeholder-character" role="img">
-            <span class="placeholder-head" aria-hidden="true"></span><span class="placeholder-body" aria-hidden="true"></span>
-            <div class="placeholder-caption"><strong></strong><small></small></div>
-          </div>
+          <img id="sumeru-alhaitham-sprite" src="assets/images/characters/alhaitham_01_idle.png" alt="Аль-Хайтам">
         </div>
       </div>
 
       <div id="ending-zhongli" class="character sumeru-person ending-zhongli" data-fontaine-character="Чжун Ли" hidden>
-        <div id="ending-zhongli-sprite" class="scene-placeholder-character" role="img">
-          <span class="placeholder-head" aria-hidden="true"></span><span class="placeholder-body" aria-hidden="true"></span>
-          <div class="placeholder-caption"><strong></strong><small></small></div>
-        </div>
+        <img id="ending-zhongli-sprite" src="assets/images/characters/zhongli_01_greeting.png" alt="Чжун Ли">
       </div>
       <button id="liyue-found-note" class="liyue-found-note" type="button" aria-label="Прочитать найденную записку с Морой" disabled hidden>
-        <span class="found-paper" aria-hidden="true"></span><span class="found-mora" aria-hidden="true">Мора</span>
+        <img src="assets/images/ui/liyue_mora_note.png" alt="Записка с монетой Мора">
       </button>
-      <div id="ending-group-layout" class="ending-group-layout" hidden>
-        <p>Ризли · Нёвиллет</p><p>Настя · Чжун Ли</p><p>Кавех · Аль-Хайтам</p>
-        <p class="group-foreground">Викутория на переднем плане: вытянула руку с телефоном, делает селфи со всеми.</p>
-      </div>
       <div id="ending-final-screen" class="ending-final-screen" hidden>
         <p>Продолжение следует…</p>
       </div>
@@ -134,9 +125,8 @@
         <div class="fontaine-note" role="dialog" aria-modal="true" aria-labelledby="fontaine-note-text">
           <img class="note-parchment" src="assets/images/ui/mysterious_note.png" alt="">
           <div class="note-content">
-            <p id="fontaine-note-text">Открой сверток с этим символом</p>
+            <p id="fontaine-note-text">Открой свёрток с этим символом</p>
             <img id="fontaine-note-icon" src="assets/images/ui/wolf_package_icon.png" alt="Пиктограмма лапы">
-            <p class="note-secondary">Нажмите “Продолжить” после вскрытия свертка.</p>
             <button id="fontaine-note-continue" type="button">Продолжить</button>
           </div>
         </div>

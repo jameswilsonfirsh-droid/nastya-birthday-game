@@ -222,44 +222,25 @@ body { background: #000; }
 }
 
 
-/* Временные HTML-заглушки Сумеру. Пропорция Насти общая с Фонтейном. */
-.scene-placeholder-background { position: absolute; inset: 0; z-index: 0; background: #52625b; }
-.scene-placeholder-background > span { position: absolute; top: 3%; left: 3%; max-width: 27%; color: #f1f4ef; font-size: clamp(12px, 2cqw, 21px); letter-spacing: .06em; }
+/* Спрайты Сумеру сохраняют общий масштаб персонажей. */
 .sumeru-person { bottom: 5%; z-index: 1; pointer-events: none; }
 .sumeru-nastya { left: 1%; width: 30%; height: var(--story-nastya-height); }
 .sumeru-vikutoria { left: 43%; bottom: 43%; width: 24%; height: calc(var(--story-nastya-height) / 2); }
 .sumeru-kaveh { left: 31%; width: 27%; height: var(--story-adult-height); }
 .sumeru-alhaitham { left: 66%; width: 28%; height: var(--story-adult-height); }
-.scene-placeholder-character { position: relative; width: 100%; height: 100%; color: #fff; }
-.placeholder-head { position: absolute; top: 0; left: 34%; width: 32%; aspect-ratio: 1; border: 2px solid #e1e7e4; border-radius: 50%; background: #71837b; }
-.placeholder-body { position: absolute; inset: 18% 12% 25%; border: 2px solid #d4ded8; border-radius: 22% 22% 8% 8%; background: #65776e; }
-.placeholder-caption { position: absolute; top: 25%; left: 3%; right: 3%; text-align: center; text-shadow: 0 1px 3px #000; }
-.placeholder-caption strong { display: block; font-size: clamp(10px, 1.6cqw, 17px); line-height: 1.25; overflow-wrap: anywhere; }
-.placeholder-caption small { display: block; margin-top: 5px; font-size: clamp(8px, 1.25cqw, 13px); line-height: 1.25; overflow-wrap: anywhere; }
-.sumeru-person.is-speaking .scene-placeholder-character { filter: drop-shadow(0 0 3px #fff4cba6) drop-shadow(0 0 8px #ffe2a24d); }
 .sumeru-scene .sumeru-chest { left: 40%; bottom: 22%; width: 20%; height: 30%; }
 .sumeru-departing { opacity: 0; transition: opacity .22s ease-out; }
 @media (prefers-reduced-motion: reduce) { .sumeru-departing { transition: none; } }
 
-.placeholder-body::before, .placeholder-body::after { content: ""; position: absolute; top: 100%; width: 29%; height: 45%; border: 2px solid #d4ded8; border-radius: 0 0 12% 12%; background: #65776e; }
-.placeholder-body::before { left: 10%; }
-.placeholder-body::after { right: 10%; }
 
 
 /* Ли Юэ: существующие персонажи/диалог/записки и отдельная находка на земле. */
 .ending-zhongli { left: 59%; width: 32%; height: var(--story-adult-height); }
-.liyue-scene .scene-placeholder-background { background: #696354; }
-.liyue-scene .scene-placeholder-background > span { font-size: clamp(10px, 1.65cqw, 17px); }
-.liyue-found-note { position: absolute; z-index: 1; left: 43%; bottom: 32%; width: 15%; height: 17%; margin: 0; padding: 0; transform: rotate(-7deg); transition: transform .45s ease, bottom .45s ease; }
-.found-paper { position: absolute; inset: 0; background: #eadfc7; border: 1px solid #b5a487; box-shadow: 0 6px 8px #0004; }
-.found-mora { position: absolute; top: 8%; left: 34%; width: 36%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; border: 3px double #9b7026; background: #dcb75d; color: #5e4315; font-size: clamp(8px, 1.2cqw, 12px); }
-.liyue-found-note.is-close { transform: rotate(-7deg) scale(2); bottom: 36%; }
+.liyue-found-note { position: absolute; z-index: 1; left: 43%; bottom: 32%; width: 15%; height: 17%; margin: 0; padding: 0; transition: transform .45s ease, bottom .45s ease; }
+.liyue-found-note.is-close { transform: scale(2); bottom: 36%; }
 .liyue-found-note:not(:disabled) { cursor: pointer; filter: drop-shadow(0 0 7px #ffe2a377); }
 .liyue-found-note:focus-visible { outline: 2px solid #fff1c6; outline-offset: 5px; }
 .ending-illustration { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
-.ending-group-layout { position: absolute; inset: 27% 8% 15%; z-index: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4%; align-items: center; text-align: center; color: #fff; font-size: clamp(11px, 2cqw, 21px); pointer-events: none; }
-.ending-group-layout p { margin: 0; }
-.ending-group-layout .group-foreground { grid-column: 1 / -1; max-width: 80%; justify-self: center; line-height: 1.5; }
 .ending-scene-fade { opacity: 0; transition: opacity .35s ease; }
 .ending-final-fade { opacity: 0; transition: opacity .9s ease; }
 .ending-final-screen { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; background: #000; }
@@ -269,3 +250,16 @@ body { background: #000; }
   .liyue-found-note, .ending-scene-fade, .ending-final-fade { transition: none; }
   .ending-final-screen p { animation: none; }
 }
+
+/* Подготовленные фоны и CG; безопасная игровая область iPhone. */
+.page { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.game-window { max-width: 100%; max-height: 100%; width: min(calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right)), calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 16 / 9)); }
+.scene-art-background { position: absolute; inset: 0; z-index: 0; background: #000; }
+.region-background-image { display: block; width: 100%; height: 100%; object-fit: cover; }
+.liyue-found-note img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.music-toggle { position: fixed; z-index: 8; top: max(8px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); min-height: 44px; margin: 0; padding: 6px 10px; border-radius: 3px; background: #17202a77; color: #fff2cc; font-size: 11px; }
+.teleport-button { min-width: 44px; min-height: 44px; }
+.teleport-button img { width: clamp(28px, 4vw, 55px); height: auto; }
+.note-content button { min-height: 44px; }
+.next-button { min-height: 32px; }
+.fontaine-vikutoria { height: calc(var(--story-nastya-height) / 2); }

@@ -37,96 +37,161 @@ const nextButton = document.getElementById("next-button");
 const characters = document.querySelectorAll("[data-character]");
 let dialogueIndex = 0;
 let stage = "intro";
-const sceneMusic = document.getElementById("scene-music");
-let musicActive = false;
+// Единый канал фоновой музыки: последовательные fade-out/fade-in без наложения.
+const musicTracks = {
+  beach: document.getElementById("scene-music"),
+  fontaine: document.getElementById("fontaine-music"),
+  sumeru: document.getElementById("sumeru-music"),
+  liyue: document.getElementById("liyue-music"),
+  chenyu: document.getElementById("chenyu-music")
+};
+const musicToggle = document.getElementById("music-toggle");
+const musicGains = new Map();
+let musicContext = null;
+let currentMusic = null;
+let desiredMusic = null;
+let musicMuted = false;
+let musicSuspended = false;
 let musicNeedsGesture = false;
-let musicAttempt = 0;
+let musicEpoch = 0;
+let musicFrame = null;
 
-function playSceneMusic() {
-  const attempt = ++musicAttempt;
-  musicNeedsGesture = false;
-  const playback = sceneMusic.play();
-  if (playback) playback.catch((error) => {
-    if (!musicActive || attempt !== musicAttempt) return;
-    musicNeedsGesture = error.name === "NotAllowedError";
-    if (!musicNeedsGesture) console.warn("Не удалось воспроизвести музыку сцены:", error);
-  });
+function setMusicLevel(audio, level) {
+  audio.dataset.level = String(level);
+  const gain = musicGains.get(audio);
+  if (gain) gain.gain.value = level;
+  else audio.volume = level;
 }
 
-function startSceneMusic() {
-  if (musicActive) return;
-  musicActive = true;
-  sceneMusic.currentTime = 0;
-  playSceneMusic();
-}
-
-function stopSceneMusic() {
-  musicActive = false;
-  musicNeedsGesture = false;
-  musicAttempt += 1;
-  sceneMusic.pause();
-  sceneMusic.currentTime = 0;
-}
-
-
-
-// Один непрерывный трек на весь Фонтейн; видео молитвы имеет свой звук.
-const fontaineMusic = document.getElementById("fontaine-music");
-let fontaineMusicActive = false;
-let fontaineMusicSuspended = false;
-let fontaineMusicNeedsGesture = false;
-let fontaineMusicAttempt = 0;
-
-function playFontaineMusic() {
-  if (!fontaineMusicActive || fontaineMusicSuspended) return;
-  const attempt = ++fontaineMusicAttempt;
-  fontaineMusicNeedsGesture = false;
-  try {
-    const playback = fontaineMusic.play();
-    if (playback) playback.catch(error => {
-      if (!fontaineMusicActive || fontaineMusicSuspended || attempt !== fontaineMusicAttempt) return;
-      fontaineMusicNeedsGesture = error.name === "NotAllowedError";
-      if (!fontaineMusicNeedsGesture) console.warn("Не удалось воспроизвести музыку Фонтейна:", error);
-    });
-  } catch (error) {
-    fontaineMusicNeedsGesture = error.name === "NotAllowedError";
-    if (!fontaineMusicNeedsGesture) console.warn("Не удалось воспроизвести музыку Фонтейна:", error);
+function unlockBackgroundMusic(context) {
+  if (musicContext || !context) return;
+  musicContext = context;
+  for (const audio of Object.values(musicTracks)) {
+    try {
+      const source = context.createMediaElementSource(audio);
+      const gain = context.createGain();
+      gain.gain.value = 0;
+      source.connect(gain).connect(context.destination);
+      musicGains.set(audio, gain);
+    } catch { setMusicLevel(audio, 0); }
+    audio.dataset.level = "0";
+    // Разрешение каждому элементу даётся в пользовательском жесте, с нулевым gain.
+    try {
+      const playback = audio.play();
+      if (playback) playback.then(() => {
+        if (audio !== currentMusic) { audio.pause(); audio.currentTime = 0; }
+      }).catch(() => {});
+      else audio.pause();
+    } catch { /* Повторим на следующем пользовательском жесте. */ }
   }
 }
 
-function startFontaineMusic() {
-  if (fontaineMusicActive) return;
-  fontaineMusicActive = true;
-  fontaineMusicSuspended = false;
-  fontaineMusic.currentTime = 0;
-  playFontaineMusic();
+function cancelMusicFade() {
+  musicEpoch += 1;
+  if (musicFrame !== null) cancelAnimationFrame(musicFrame);
+  musicFrame = null;
+  return musicEpoch;
+}
+
+function fadeMusic(audio, level, duration, epoch, done = () => {}) {
+  const startLevel = Number(audio.dataset.level || 0);
+  const started = performance.now();
+  const tick = now => {
+    if (epoch !== musicEpoch) return;
+    const progress = Math.min(1, (now - started) / duration);
+    setMusicLevel(audio, startLevel + (level - startLevel) * progress);
+    if (progress < 1) musicFrame = requestAnimationFrame(tick);
+    else { musicFrame = null; done(); }
+  };
+  musicFrame = requestAnimationFrame(tick);
+}
+
+function playDesiredMusic(epoch) {
+  if (epoch !== musicEpoch || !desiredMusic || musicSuspended) return;
+  const audio = musicTracks[desiredMusic];
+  if (currentMusic !== audio) {
+    Object.values(musicTracks).forEach(track => { if (track !== audio) { track.pause(); setMusicLevel(track, 0); } });
+    currentMusic = audio;
+    audio.currentTime = 0;
+    setMusicLevel(audio, 0);
+  }
+  musicNeedsGesture = false;
+  try {
+    const playback = audio.play();
+    const ready = () => {
+      if (epoch !== musicEpoch || musicSuspended || currentMusic !== audio) return;
+      fadeMusic(audio, musicMuted ? 0 : .8, 650, epoch);
+    };
+    if (playback) playback.then(ready).catch(error => {
+      if (epoch !== musicEpoch) return;
+      musicNeedsGesture = true;
+      if (error.name !== "NotAllowedError" && error.name !== "AbortError") console.warn("Не удалось запустить фоновую музыку:", error);
+    });
+    else ready();
+  } catch { musicNeedsGesture = true; }
+}
+
+function setRegionMusic(region) {
+  if (desiredMusic === region && !musicSuspended && currentMusic === musicTracks[region] && currentMusic && !currentMusic.paused) return;
+  desiredMusic = region;
+  musicSuspended = false;
+  musicNeedsGesture = false;
+  musicToggle.hidden = !region;
+  const epoch = cancelMusicFade();
+  const next = region ? musicTracks[region] : null;
+  if (currentMusic && currentMusic !== next && !currentMusic.paused) {
+    const previous = currentMusic;
+    fadeMusic(previous, 0, 650, epoch, () => {
+      previous.pause();
+      if (currentMusic === previous) currentMusic = null;
+      playDesiredMusic(epoch);
+    });
+  } else if (next) playDesiredMusic(epoch);
+  else if (currentMusic) { currentMusic.pause(); setMusicLevel(currentMusic, 0); currentMusic = null; }
 }
 
 function pauseFontaineMusicForWish() {
-  fontaineMusicSuspended = true;
-  fontaineMusicNeedsGesture = false;
-  fontaineMusicAttempt += 1;
-  fontaineMusic.pause();
+  musicSuspended = true;
+  musicNeedsGesture = false;
+  cancelMusicFade();
+  Object.values(musicTracks).forEach(audio => { audio.pause(); setMusicLevel(audio, 0); });
+  musicToggle.hidden = true;
 }
 
 function resumeFontaineMusicAfterWish() {
-  fontaineMusicSuspended = false;
-  playFontaineMusic();
+  musicSuspended = false;
+  musicToggle.hidden = false;
+  playDesiredMusic(cancelMusicFade());
 }
 
-function stopFontaineMusic() {
-  if (!fontaineMusicActive) return;
-  fontaineMusicActive = false;
-  fontaineMusicSuspended = false;
-  fontaineMusicNeedsGesture = false;
-  fontaineMusicAttempt += 1;
-  fontaineMusic.pause();
-  fontaineMusic.currentTime = 0;
-}
+function startSceneMusic() { setRegionMusic("beach"); }
+function stopSceneMusic() { setRegionMusic(null); }
+function startFontaineMusic() { setRegionMusic("fontaine"); }
+function stopFontaineMusic() { setRegionMusic(null); }
 
-// Safari может потребовать ещё одно пользовательское нажатие для возобновления.
+musicToggle.addEventListener("click", () => {
+  musicMuted = !musicMuted;
+  musicToggle.textContent = musicMuted ? "Музыка: выкл." : "Музыка: вкл.";
+  musicToggle.setAttribute("aria-pressed", String(musicMuted));
+  if (currentMusic && !musicSuspended) {
+    if (currentMusic === musicTracks[desiredMusic]) fadeMusic(currentMusic, musicMuted ? 0 : .8, 180, cancelMusicFade());
+    else setRegionMusic(desiredMusic);
+  }
+});
+
 document.addEventListener("click", () => {
-  if (fontaineMusicNeedsGesture && isLandscape()) playFontaineMusic();
+  if (musicContext && musicContext.state === "suspended") musicContext.resume().catch(() => {});
+  if (musicNeedsGesture && !musicSuspended && isLandscape()) playDesiredMusic(cancelMusicFade());
+}, { capture: true });
+
+// Общая защита старых и новых сцен, включая переход между разными кнопками.
+let storyLastTap = -Infinity;
+document.addEventListener("click", event => {
+  const button = event.target.closest("button");
+  if (!button || button.id === "music-toggle") return;
+  const now = performance.now();
+  if (now - storyLastTap < 300) { event.preventDefault(); event.stopImmediatePropagation(); return; }
+  storyLastTap = now;
 }, { capture: true });
 
 // Общий renderer для пляжа и последующих диалоговых сцен.
@@ -165,7 +230,6 @@ function startScene() {
 
 nextButton.addEventListener("click", () => {
   if (document.getElementById("story").hidden || !isLandscape()) return;
-  if (musicActive && musicNeedsGesture) playSceneMusic();
   if (stage === "intro") {
     stage = "idle";
     charactersLayer.hidden = false;
@@ -201,6 +265,53 @@ function preloadImage(path) {
 }
 
 const imagePaths = [
+  "assets/images/backgrounds/chenyu_tea_scene.png",
+  "assets/images/backgrounds/final_group_photo.png",
+  "assets/images/backgrounds/liyue_arrival_bg.png",
+  "assets/images/backgrounds/liyue_zhongli_bg.png",
+  "assets/images/backgrounds/sumeru_arrival_bg.png",
+  "assets/images/backgrounds/sumeru_house_bg.png",
+  "assets/images/characters/alhaitham_01_idle.png",
+  "assets/images/characters/alhaitham_02_disapproving.png",
+  "assets/images/characters/alhaitham_03_skeptical.png",
+  "assets/images/characters/alhaitham_04_dry_reply.png",
+  "assets/images/characters/alhaitham_08_question.png",
+  "assets/images/characters/alhaitham_09_reasonable.png",
+  "assets/images/characters/kaveh_01_greeting.png",
+  "assets/images/characters/kaveh_02_concerned.png",
+  "assets/images/characters/kaveh_03_worried.png",
+  "assets/images/characters/kaveh_04_annoyed.png",
+  "assets/images/characters/kaveh_05_reaction.png",
+  "assets/images/characters/kaveh_06_defensive.png",
+  "assets/images/characters/kaveh_07_indignant.png",
+  "assets/images/characters/kaveh_09_explaining.png",
+  "assets/images/characters/kaveh_11_turn_to_nastya.png",
+  "assets/images/characters/kaveh_12_gift.png",
+  "assets/images/characters/kaveh_14_teasing.png",
+  "assets/images/characters/kaveh_15_shouting.png",
+  "assets/images/characters/kaveh_16_confident.png",
+  "assets/images/characters/kaveh_18_farewell.png",
+  "assets/images/characters/nastya_08_happy_greeting.png",
+  "assets/images/characters/nastya_09_curious.png",
+  "assets/images/characters/nastya_10_suspicious.png",
+  "assets/images/characters/nastya_11_tired_irony.png",
+  "assets/images/characters/nastya_12_warm_smile.png",
+  "assets/images/characters/nastya_13_tea_surprise.png",
+  "assets/images/characters/vikutoria_03_curious_mora.png",
+  "assets/images/characters/zhongli_01_greeting.png",
+  "assets/images/characters/zhongli_03_reassuring.png",
+  "assets/images/characters/zhongli_04_birthday.png",
+  "assets/images/characters/zhongli_05_gift.png",
+  "assets/images/characters/zhongli_06_reflective.png",
+  "assets/images/characters/zhongli_08_pleased.png",
+  "assets/images/characters/zhongli_09_gentle.png",
+  "assets/images/characters/zhongli_10_warm_wish.png",
+  "assets/images/characters/zhongli_11_invitation.png",
+  "assets/images/characters/zhongli_12_osmanthus.png",
+  "assets/images/characters/zhongli_13_tea.png",
+  "assets/images/characters/zhongli_14_exception.png",
+  "assets/images/ui/liyue_mora_note.png",
+
   "assets/images/backgrounds/beach.png",
   assetRoot + "nastya_idle.png",
   assetRoot + "vikutoria_idle.png",
@@ -327,8 +438,6 @@ const fontaineNoteOverlay = document.getElementById("fontaine-note-overlay");
 const fontaineContinue = document.getElementById("fontaine-note-continue");
 const fontaineNoteIcon = document.getElementById("fontaine-note-icon");
 const fontaineNoteText = document.getElementById("fontaine-note-text");
-const fontaineNoteSecondary = fontaineNoteOverlay.querySelector(".note-secondary");
-const originalNoteSecondaryText = fontaineNoteSecondary.textContent;
 const rizleyDialogue = document.getElementById("rizley-dialogue");
 let fontaineFrame = 1;
 let rizleyDialogueIndex = 0;
@@ -451,10 +560,7 @@ function showPackageNote(packageType) {
   rizleyDialogue.hidden = true;
   fontaineNoteIcon.src = "assets/images/ui/" + symbol.file;
   fontaineNoteIcon.alt = symbol.alt;
-  fontaineNoteText.textContent = "Открой сверток с этим символом";
-  fontaineNoteSecondary.textContent = (packageType === "water" || packageType === "wish")
-    ? "Нажмите “Продолжить” после вскрытия свертка."
-    : originalNoteSecondaryText;
+  fontaineNoteText.textContent = "Открой свёрток с этим символом";
   fontaineContinue.hidden = false;
   fontaineContinue.disabled = false;
   [fontaineNastya, fontaineVikutoria, fontaineRizley, fontaineChest, fontaineNext, rizleyDialogue].forEach(element => { element.inert = true; });
@@ -830,12 +936,12 @@ wishVideo.addEventListener("ended", () => {
   wishVideoRetry.hidden = true;
   wishPausedForOrientation = false;
   nextScene.inert = false;
-  resumeFontaineMusicAfterWish();
   showPackageNote("wish");
 });
 wishVideo.addEventListener("error", () => reportWishVideoFailure(wishVideo.error));
 
 function startNeuvilletteAfterWish() {
+  resumeFontaineMusicAfterWish();
   stage = "neuvillette-after-wish";
   showNeuvilletteComposition();
   neuvilletteSequence = neuvilletteAfterWish;
@@ -882,143 +988,142 @@ window.addEventListener("orientationchange", updateWishOrientation);
 
 
 // Сумеру: тот же renderer, сундук, записки и маршруты карты.
-// Для замены заглушки заполните src существующим путём в sumeruVisuals;
-// идентификаторы поз и сценарий не меняются.
+// Реестр связывает сюжетные эмоции с существующими PNG.
 const sumeruVisuals = {
   "kaveh_01_greeting": {
     "name": "Кавех",
     "label": "приветствие",
-    "src": null
+    "src": "assets/images/characters/kaveh_01_greeting.png"
   },
   "kaveh_02_concerned": {
     "name": "Кавех",
     "label": "обеспокоенность",
-    "src": null
+    "src": "assets/images/characters/kaveh_02_concerned.png"
   },
   "kaveh_03_worried": {
     "name": "Кавех",
     "label": "настороженность",
-    "src": null
+    "src": "assets/images/characters/kaveh_03_worried.png"
   },
   "kaveh_04_annoyed": {
     "name": "Кавех",
     "label": "раздражение",
-    "src": null
+    "src": "assets/images/characters/kaveh_04_annoyed.png"
   },
   "kaveh_05_reaction": {
     "name": "Кавех",
     "label": "реакция",
-    "src": null
+    "src": "assets/images/characters/kaveh_05_reaction.png"
   },
   "kaveh_06_defensive": {
     "name": "Кавех",
     "label": "оправдание",
-    "src": null
+    "src": "assets/images/characters/kaveh_06_defensive.png"
   },
   "kaveh_07_indignant": {
     "name": "Кавех",
     "label": "возмущение",
-    "src": null
+    "src": "assets/images/characters/kaveh_07_indignant.png"
   },
   "kaveh_08_arguing": {
     "name": "Кавех",
     "label": "спор",
-    "src": null
+    "src": "assets/images/characters/kaveh_06_defensive.png"
   },
   "kaveh_09_explaining": {
     "name": "Кавех",
     "label": "объяснение",
-    "src": null
+    "src": "assets/images/characters/kaveh_09_explaining.png"
   },
   "kaveh_10_exasperated": {
     "name": "Кавех",
     "label": "усталое раздражение",
-    "src": null
+    "src": "assets/images/characters/kaveh_04_annoyed.png"
   },
   "kaveh_11_turn_to_nastya": {
     "name": "Кавех",
     "label": "обращение к Насте",
-    "src": null
+    "src": "assets/images/characters/kaveh_11_turn_to_nastya.png"
   },
   "kaveh_12_gift": {
     "name": "Кавех",
     "label": "подарок",
-    "src": null
+    "src": "assets/images/characters/kaveh_12_gift.png"
   },
   "kaveh_13_satisfied": {
     "name": "Кавех",
     "label": "довольная улыбка",
-    "src": null
+    "src": "assets/images/characters/kaveh_12_gift.png"
   },
   "kaveh_14_teasing": {
     "name": "Кавех",
     "label": "насмешка",
-    "src": null
+    "src": "assets/images/characters/kaveh_14_teasing.png"
   },
   "kaveh_15_shouting": {
     "name": "Кавех",
     "label": "вспышка раздражения",
-    "src": null
+    "src": "assets/images/characters/kaveh_15_shouting.png"
   },
   "kaveh_16_confident": {
     "name": "Кавех",
     "label": "уверенность",
-    "src": null
+    "src": "assets/images/characters/kaveh_16_confident.png"
   },
   "kaveh_17_smug": {
     "name": "Кавех",
     "label": "хитрая улыбка",
-    "src": null
+    "src": "assets/images/characters/kaveh_16_confident.png"
   },
   "kaveh_18_farewell": {
     "name": "Кавех",
     "label": "прощание",
-    "src": null
+    "src": "assets/images/characters/kaveh_18_farewell.png"
   },
   "alhaitham_01_idle": {
     "name": "Аль-Хайтам",
     "label": "невозмутимость",
-    "src": null
+    "src": "assets/images/characters/alhaitham_01_idle.png"
   },
   "alhaitham_02_disapproving": {
     "name": "Аль-Хайтам",
     "label": "сухое замечание",
-    "src": null
+    "src": "assets/images/characters/alhaitham_02_disapproving.png"
   },
   "alhaitham_03_skeptical": {
     "name": "Аль-Хайтам",
     "label": "скепсис",
-    "src": null
+    "src": "assets/images/characters/alhaitham_03_skeptical.png"
   },
   "alhaitham_04_dry_reply": {
     "name": "Аль-Хайтам",
     "label": "сарказм",
-    "src": null
+    "src": "assets/images/characters/alhaitham_04_dry_reply.png"
   },
   "alhaitham_05_questioning": {
     "name": "Аль-Хайтам",
     "label": "вопрос",
-    "src": null
+    "src": "assets/images/characters/alhaitham_08_question.png"
   },
   "alhaitham_06_ironic": {
     "name": "Аль-Хайтам",
     "label": "ирония",
-    "src": null
+    "src": "assets/images/characters/alhaitham_03_skeptical.png"
   },
   "alhaitham_07_still_here": {
     "name": "Аль-Хайтам",
     "label": "невозмутимое замечание",
-    "src": null
+    "src": "assets/images/characters/alhaitham_01_idle.png"
   },
   "alhaitham_08_question": {
     "name": "Аль-Хайтам",
     "label": "недоумение",
-    "src": null
+    "src": "assets/images/characters/alhaitham_08_question.png"
   },
   "alhaitham_09_reasonable": {
     "name": "Аль-Хайтам",
     "label": "спокойное возражение",
-    "src": null
+    "src": "assets/images/characters/alhaitham_09_reasonable.png"
   }
 };
 const sumeruDialogues = {
@@ -1033,7 +1138,7 @@ const sumeruDialogues = {
       "speaker": "Настя",
       "text": "Привет!",
       "target": "sumeru-nastya-sprite",
-      "sprite": "nastya_05_grateful.png"
+      "sprite": "nastya_08_happy_greeting.png"
     },
     {
       "speaker": "Кавех",
@@ -1045,7 +1150,7 @@ const sumeruDialogues = {
       "speaker": "Настя",
       "text": "Какая?",
       "target": "sumeru-nastya-sprite",
-      "sprite": "nastya_01_confused.png"
+      "sprite": "nastya_09_curious.png"
     },
     {
       "speaker": "Кавех",
@@ -1057,7 +1162,7 @@ const sumeruDialogues = {
       "speaker": "Настя",
       "text": "Кто?",
       "target": "sumeru-nastya-sprite",
-      "sprite": "nastya_01_confused.png"
+      "sprite": "nastya_10_suspicious.png"
     },
     {
       "speaker": "Кавех",
@@ -1210,7 +1315,6 @@ const sumeruDialogues = {
   ]
 };
 const sumeruBackground = document.getElementById("sumeru-background");
-const sumeruLocation = document.getElementById("sumeru-location");
 const sumeruActors = document.getElementById("sumeru-actors");
 const sumeruNastya = document.getElementById("sumeru-nastya");
 const sumeruVikutoria = document.getElementById("sumeru-vikutoria");
@@ -1233,45 +1337,26 @@ function acceptSumeruTap() {
   return true;
 }
 
-// Универсальная подпись состояния, без запроса отсутствующих файлов.
+// Идентификатор эмоции сохраняется независимо от фактического PNG.
 function setSumeruSprite(target, state) {
-  let element = document.getElementById(target);
+  const element = document.getElementById(target);
   const visual = sumeruVisuals[state];
-  if (!visual) {
-    if (element.tagName !== "IMG") throw new Error("Неизвестное состояние: " + state);
-    element.src = assetRoot + state;
-  } else if (visual.src) {
-    if (element.tagName !== "IMG") {
-      const image = document.createElement("img");
-      image.id = target;
-      element.replaceWith(image);
-      element = image;
-    }
-    element.src = visual.src;
-    element.alt = visual.name + " — " + visual.label;
-  } else {
-    if (element.tagName === "IMG") {
-      const placeholder = document.createElement("div");
-      placeholder.id = target;
-      placeholder.className = "scene-placeholder-character";
-      placeholder.setAttribute("role", "img");
-      placeholder.innerHTML = '<span class="placeholder-head" aria-hidden="true"></span><span class="placeholder-body" aria-hidden="true"></span><div class="placeholder-caption"><strong></strong><small></small></div>';
-      element.replaceWith(placeholder);
-      element = placeholder;
-    }
-    element.querySelector("strong").textContent = visual.name + " — " + visual.label;
-    element.querySelector("small").textContent = state;
-    element.setAttribute("aria-label", visual.name + " — " + visual.label + " (" + state + ")");
-  }
+  const path = visual ? visual.src : assetRoot + state;
+  if (element.getAttribute("src") !== path) element.src = path;
+  if (visual) element.alt = visual.name;
   element.dataset.state = state;
 }
 
 function setSumeruBackground(label) {
-  sumeruLocation.textContent = label;
+  const filename = label === "СУМЕРУ — ДОМ" ? "sumeru_house_bg.png" : "sumeru_arrival_bg.png";
+  const image = document.getElementById("region-background-image");
+  image.src = "assets/images/backgrounds/" + filename;
+  image.className = "region-background-image";
   sumeruBackground.hidden = false;
 }
 
 function startSumeruScene() {
+  setRegionMusic("sumeru");
   stage = "sumeru-arrival";
   nextScene.hidden = false;
   nextScene.setAttribute("aria-label", "Сумеру");
@@ -1331,7 +1416,7 @@ function startSumeruDialogue(part) {
   sumeruVikutoria.hidden = true;
   sumeruAlhaitham.hidden = part === "first";
   // Не сбрасываем предыдущие эмоции: renderer меняет только говорящего.
-  setSumeruBackground("СУМЕРУ — ДИАЛОГ");
+  setSumeruBackground(part === "after" ? "СУМЕРУ — ДОМ" : "СУМЕРУ — ДИАЛОГ");
   fontaineChest.hidden = true;
   fontaineChest.disabled = true;
   fontaineNext.hidden = false;
@@ -1362,6 +1447,7 @@ fontaineNext.addEventListener("click", () => {
     showSumeruChest();
   } else if (sumeruDialogueIndex < sumeruSequence.length - 1) {
     sumeruDialogueIndex += 1;
+    if (stage === "sumeru-dialogue-argument" && sumeruDialogueIndex === sumeruSequence.length - 1) setSumeruBackground("СУМЕРУ — ДОМ");
     renderDialogue(sumeruSequence, sumeruDialogueIndex, sumeruDialogueUI);
   } else if (stage === "sumeru-dialogue-first") {
     showPackageNote("book");
@@ -1397,77 +1483,77 @@ function finishSumeruScene() {
 registerScene("liyue_pending", startLiyueScene);
 
 
-// Ли Юэ и завершение главы: переиспользуем renderer и placeholder-адаптер Сумеру.
+// Ли Юэ и завершение главы: общий renderer и реестр спрайтов.
 Object.assign(sumeruVisuals, {
   "zhongli_01_greeting": {
     "name": "Чжун Ли",
     "label": "приветствие",
-    "src": null
+    "src": "assets/images/characters/zhongli_01_greeting.png"
   },
   "zhongli_02_observant": {
     "name": "Чжун Ли",
     "label": "заинтересованность",
-    "src": null
+    "src": "assets/images/characters/zhongli_06_reflective.png"
   },
   "zhongli_03_reassuring": {
     "name": "Чжун Ли",
     "label": "доброжелательность",
-    "src": null
+    "src": "assets/images/characters/zhongli_03_reassuring.png"
   },
   "zhongli_04_birthday": {
     "name": "Чжун Ли",
     "label": "поздравление",
-    "src": null
+    "src": "assets/images/characters/zhongli_04_birthday.png"
   },
   "zhongli_05_gift": {
     "name": "Чжун Ли",
     "label": "подарок",
-    "src": null
+    "src": "assets/images/characters/zhongli_05_gift.png"
   },
   "zhongli_06_reflective": {
     "name": "Чжун Ли",
     "label": "задумчивость",
-    "src": null
+    "src": "assets/images/characters/zhongli_06_reflective.png"
   },
   "zhongli_07_hope": {
     "name": "Чжун Ли",
     "label": "тёплая улыбка",
-    "src": null
+    "src": "assets/images/characters/zhongli_09_gentle.png"
   },
   "zhongli_08_pleased": {
     "name": "Чжун Ли",
     "label": "удовлетворение",
-    "src": null
+    "src": "assets/images/characters/zhongli_08_pleased.png"
   },
   "zhongli_09_gentle": {
     "name": "Чжун Ли",
     "label": "мягкая улыбка",
-    "src": null
+    "src": "assets/images/characters/zhongli_09_gentle.png"
   },
   "zhongli_10_warm_wish": {
     "name": "Чжун Ли",
     "label": "забота",
-    "src": null
+    "src": "assets/images/characters/zhongli_10_warm_wish.png"
   },
   "zhongli_11_invitation": {
     "name": "Чжун Ли",
     "label": "приглашение",
-    "src": null
+    "src": "assets/images/characters/zhongli_11_invitation.png"
   },
   "zhongli_12_osmanthus": {
     "name": "Чжун Ли",
     "label": "османтус",
-    "src": null
+    "src": "assets/images/characters/zhongli_12_osmanthus.png"
   },
   "zhongli_13_tea": {
     "name": "Чжун Ли",
     "label": "чай, самоирония",
-    "src": null
+    "src": "assets/images/characters/zhongli_13_tea.png"
   },
   "zhongli_14_exception": {
     "name": "Чжун Ли",
     "label": "исключение",
-    "src": null
+    "src": "assets/images/characters/zhongli_14_exception.png"
   }
 });
 const endingDialogues = {
@@ -1494,7 +1580,7 @@ const endingDialogues = {
       "speaker": "Настя",
       "text": "Это ещё мягко сказано.",
       "target": "sumeru-nastya-sprite",
-      "sprite": "nastya_06_awkward_admission.png"
+      "sprite": "nastya_11_tired_irony.png"
     },
     {
       "speaker": "Чжун Ли",
@@ -1569,7 +1655,7 @@ const endingDialogues = {
       "speaker": "Настя",
       "text": "Да. Мне всё очень понравилось.",
       "target": "sumeru-nastya-sprite",
-      "sprite": "nastya_05_grateful.png"
+      "sprite": "nastya_12_warm_smile.png"
     },
     {
       "speaker": "Чжун Ли",
@@ -1600,7 +1686,7 @@ const endingDialogues = {
       "speaker": "Настя",
       "text": "Звучит как хорошее пожелание.",
       "target": "sumeru-nastya-sprite",
-      "sprite": "nastya_02_done.png"
+      "sprite": "nastya_12_warm_smile.png"
     },
     {
       "speaker": "Чжун Ли",
@@ -1625,7 +1711,7 @@ const endingDialogues = {
       "speaker": "Настя",
       "text": "Чаем?",
       "target": "sumeru-nastya-sprite",
-      "sprite": "nastya_01_confused.png"
+      "sprite": "nastya_13_tea_surprise.png"
     },
     {
       "speaker": "Чжун Ли",
@@ -1645,7 +1731,7 @@ const endingDialogues = {
       "speaker": "Викутория",
       "text": "Это что, Мора?",
       "target": "sumeru-vikutoria-sprite",
-      "sprite": "vikutoria_pointing_chest.png"
+      "sprite": "vikutoria_03_curious_mora.png"
     },
     {
       "speaker": "Настя",
@@ -1669,19 +1755,18 @@ const endingDialogues = {
     }
   ]
 };
-// Будущие изображения подключаются только здесь; null не вызывает загрузку.
+// Проверенные реальные фоны, CG и находка Ли Юэ.
 const endingVisuals = {
-  LIYUE_ARRIVAL_BG: { label: "ЛИ ЮЭ — ПРИБЫТИЕ", src: null },
-  LIYUE_MORA_BG: { label: "ЛИ ЮЭ — ЗАПИСКА С МОРОЙ", src: null },
-  LIYUE_ZHONGLI_BG: { label: "ЛИ ЮЭ — ВСТРЕЧА С ЧЖУН ЛИ", src: null },
-  CHENYU_TEA_SCENE: { label: "ЧЭНЬЮЙ — ЧАЕПИТИЕ В БЕСЕДКЕ", src: null },
-  FINAL_GROUP_PHOTO: { label: "ФИНАЛЬНОЕ ОБЩЕЕ ФОТО", src: null },
-  LIYUE_MORA_NOTE: { label: "Лист бумаги с монетой Мора", src: null }
+  LIYUE_ARRIVAL_BG: { label: "ЛИ ЮЭ — ПРИБЫТИЕ", src: "assets/images/backgrounds/liyue_arrival_bg.png" },
+  LIYUE_MORA_BG: { label: "ЛИ ЮЭ — ЗАПИСКА С МОРОЙ", src: "assets/images/backgrounds/liyue_arrival_bg.png" },
+  LIYUE_ZHONGLI_BG: { label: "ЛИ ЮЭ — ВСТРЕЧА С ЧЖУН ЛИ", src: "assets/images/backgrounds/liyue_zhongli_bg.png" },
+  CHENYU_TEA_SCENE: { label: "ЧЭНЬЮЙ — ЧАЕПИТИЕ В БЕСЕДКЕ", src: "assets/images/backgrounds/chenyu_tea_scene.png" },
+  FINAL_GROUP_PHOTO: { label: "ФИНАЛЬНОЕ ОБЩЕЕ ФОТО", src: "assets/images/backgrounds/final_group_photo.png" },
+  LIYUE_MORA_NOTE: { label: "Лист бумаги с монетой Мора", src: "assets/images/ui/liyue_mora_note.png" }
 };
 const endingZhongli = document.getElementById("ending-zhongli");
 const endingCharacters = [sumeruNastya, sumeruVikutoria, endingZhongli];
 const foundMoraNote = document.getElementById("liyue-found-note");
-const endingGroupLayout = document.getElementById("ending-group-layout");
 const endingFinalScreen = document.getElementById("ending-final-screen");
 const endingDialogueUI = {
   ...rizleyDialogueUI, characters: endingCharacters, setSprite: setSumeruSprite
@@ -1733,28 +1818,16 @@ function acceptEndingTap() {
 
 function showEndingVisual(id) {
   const visual = endingVisuals[id];
-  setSumeruBackground(visual.label);
+  const image = document.getElementById("region-background-image");
+  image.src = visual.src;
+  image.alt = id === "FINAL_GROUP_PHOTO" ? "Общее фото Насти и её спутников" : "";
+  image.className = ["CHENYU_TEA_SCENE", "FINAL_GROUP_PHOTO"].includes(id) ? "ending-illustration" : "region-background-image";
   sumeruBackground.dataset.assetId = id;
-  sumeruLocation.textContent = visual.label + " · " + id;
-  let image = sumeruBackground.querySelector("img");
-  if (visual.src) {
-    if (!image) {
-      image = document.createElement("img");
-      image.className = "ending-illustration";
-      sumeruBackground.prepend(image);
-    }
-    image.src = visual.src;
-    image.alt = visual.label;
-    image.hidden = false;
-    sumeruLocation.hidden = true;
-  } else {
-    if (image) image.hidden = true;
-    sumeruLocation.hidden = false;
-  }
-  endingGroupLayout.hidden = id !== "FINAL_GROUP_PHOTO" || !!visual.src;
+  sumeruBackground.hidden = false;
 }
 
 function startLiyueScene() {
+  setRegionMusic("liyue");
   stage = "liyue-arrival";
   nextScene.hidden = false;
   nextScene.setAttribute("aria-label", "Ли Юэ");
@@ -1773,23 +1846,11 @@ function startLiyueScene() {
   wishAction.hidden = true;
   rizleyDialogue.hidden = true;
   rizleyDialogue.classList.remove("dialogue-fade-out");
-  foundMoraNote.hidden = true;
+  foundMoraNote.hidden = false;
   foundMoraNote.disabled = true;
   foundMoraNote.classList.remove("is-close");
   foundMoraNote.dataset.assetId = "LIYUE_MORA_NOTE";
-  const itemVisual = endingVisuals.LIYUE_MORA_NOTE;
-  let itemImage = foundMoraNote.querySelector("img");
-  foundMoraNote.querySelectorAll("span").forEach(element => { element.hidden = !!itemVisual.src; });
-  if (itemVisual.src) {
-    if (!itemImage) {
-      itemImage = document.createElement("img");
-      itemImage.className = "ending-illustration";
-      foundMoraNote.append(itemImage);
-    }
-    itemImage.src = itemVisual.src;
-    itemImage.alt = itemVisual.label;
-    itemImage.hidden = false;
-  } else if (itemImage) itemImage.hidden = true;
+  foundMoraNote.querySelector("img").src = endingVisuals.LIYUE_MORA_NOTE.src;
   endingFinalScreen.hidden = true;
   showEndingVisual("LIYUE_ARRIVAL_BG");
   setSumeruSprite("sumeru-nastya-sprite", "nastya_idle.png");
@@ -1903,6 +1964,7 @@ function fadeEndingScene(callback) {
 }
 
 function startChenyuTeaTransition() {
+  setRegionMusic("chenyu");
   stage = "ending-tea-transition";
   fadeEndingScene(() => {
     stage = "ending-tea";
@@ -1926,11 +1988,10 @@ function startGroupPhotoTransition() {
 function startFinalFade() {
   stage = "ending-fade";
   sumeruBackground.classList.add("ending-final-fade");
-  endingGroupLayout.classList.add("ending-final-fade");
   endingDelay(900, () => {
     stage = "chapter-complete";
+    musicToggle.hidden = true;
     sumeruBackground.hidden = true;
-    endingGroupLayout.hidden = true;
     endingFinalScreen.hidden = false;
     rizleyDialogue.hidden = true;
     fontaineNext.hidden = true;
