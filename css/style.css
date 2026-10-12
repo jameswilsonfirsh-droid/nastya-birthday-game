@@ -284,3 +284,57 @@ body { background: #000; }
 @media (prefers-reduced-motion: reduce) {
   .interactive-object > img { animation: none !important; }
 }
+
+/* Единый диалог: золотое имя, линия и белый текст на мягком чёрном градиенте. */
+.dialogue-box,
+.fontaine-scene .dialogue-box {
+  min-height: 30%;
+  padding: clamp(10px, 2vh, 18px) 12% clamp(18px, 4vh, 32px);
+  background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, .16) 18%, rgba(0, 0, 0, .38) 55%, rgba(0, 0, 0, .48) 100%);
+}
+#speaker, .dialogue-speaker,
+.fontaine-scene .dialogue-speaker {
+  margin: 0 0 7px;
+  padding-bottom: 7px;
+  color: #ffd069;
+  font-size: clamp(13px, 1.8vw, 20px);
+  font-weight: 600;
+  text-shadow: 0 1px 4px #000;
+}
+#speaker::after, .dialogue-speaker::after {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d8ae5580 8%, #ffd069cc 50%, #d8ae5580 92%, transparent);
+}
+#dialogue-text, .dialogue-text,
+.fontaine-scene .dialogue-text {
+  color: #fff;
+  font-size: clamp(12px, 1.7vw, 20px);
+  font-weight: 500;
+  line-height: 1.4;
+  text-shadow: 0 1px 3px #000;
+}
+.next-button.dialogue-hit-area {
+  inset: auto 0 0;
+  width: 100%;
+  height: var(--dialogue-hit-height, 30%);
+  padding: 0;
+  transform: none;
+  color: transparent;
+  font-size: 0;
+  text-shadow: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.next-button.dialogue-hit-area:disabled { cursor: wait; }
+.next-button.dialogue-hit-area:focus-visible {
+  outline: 1px solid #ffd06988;
+  outline-offset: -3px;
+}
+@media (max-height: 330px) {
+  .dialogue-box, .fontaine-scene .dialogue-box { padding: 8px 9% 16px; }
+  #speaker, .dialogue-speaker, .fontaine-scene .dialogue-speaker { margin-bottom: 5px; padding-bottom: 5px; font-size: 13px; }
+  #dialogue-text, .dialogue-text, .fontaine-scene .dialogue-text { font-size: 12px; line-height: 1.3; }
+}

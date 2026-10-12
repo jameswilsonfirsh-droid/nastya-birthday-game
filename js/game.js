@@ -2004,3 +2004,27 @@ function startFinalFade() {
     nextScene.setAttribute("aria-label", "Продолжение следует…");
   });
 }
+
+
+// Та же нативная кнопка и прежние обработчики: в диалоге её область совпадает
+// со всей панелью, а надпись скрыта. В установочных кадрах остаётся «Далее».
+function bindDialogueHitArea(scene, panel, button) {
+  const update = () => {
+    const dialogueVisible = !scene.hidden && !panel.hidden;
+    button.classList.toggle("dialogue-hit-area", dialogueVisible);
+    if (dialogueVisible) {
+      button.style.setProperty("--dialogue-hit-height", panel.getBoundingClientRect().height + "px");
+    }
+  };
+  const observer = new MutationObserver(update);
+  observer.observe(panel, { attributes: true, attributeFilter: ["hidden"] });
+  observer.observe(scene, { attributes: true, attributeFilter: ["hidden"] });
+  if (typeof ResizeObserver !== "undefined") {
+    const resizeObserver = new ResizeObserver(update);
+    resizeObserver.observe(panel);
+  }
+  window.addEventListener("resize", update);
+  update();
+}
+bindDialogueHitArea(beachScene, dialogueBox, nextButton);
+bindDialogueHitArea(nextScene, rizleyDialogue, fontaineNext);
