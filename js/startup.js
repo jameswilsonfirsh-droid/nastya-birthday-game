@@ -111,7 +111,7 @@ startupButton.addEventListener("click", () => {
 function updateEnterButton() {
   if (startupStage !== "video") return;
   const remaining = loadingVideo.duration - loadingVideo.currentTime;
-  enterButton.hidden = !(Number.isFinite(remaining) && remaining <= 3);
+  enterButton.hidden = !(Number.isFinite(remaining) && remaining <= 7);
 }
 loadingVideo.addEventListener("timeupdate", updateEnterButton);
 loadingVideo.addEventListener("durationchange", updateEnterButton);
