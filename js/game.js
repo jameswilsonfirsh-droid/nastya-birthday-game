@@ -211,6 +211,7 @@ function renderDialogue(sequence = dialogues, index = dialogueIndex, ui = {
   const isLast = index === sequence.length - 1;
   ui.next.textContent = "Далее ◆";
   ui.next.setAttribute("aria-label", isLast ? ui.finalLabel : "Следующая реплика");
+  queueMicrotask(() => rememberDialogueFrame(ui));
 }
 
 function startScene() {
@@ -2028,3 +2029,87 @@ function bindDialogueHitArea(scene, panel, button) {
 }
 bindDialogueHitArea(beachScene, dialogueBox, nextButton);
 bindDialogueHitArea(nextScene, rizleyDialogue, fontaineNext);
+
+
+// Возврат только внутри текущего разговора: не переоткрываем подарки или видео.
+const dialogueBack = document.getElementById("dialogue-back");
+let dialogueHistory = [];
+let dialogueHistoryGroup = "";
+
+function currentDialogueGroup() {
+  if (stage === "dialogue") return "beach";
+  if (["liyue-look", "liyue-mora-question", "liyue-mora-answer"].includes(stage)) return "liyue-find";
+  if (["fontaine-rizley-dialogue", "fontaine-rizley-continuation",
+    "neuvillette-before-wish", "neuvillette-after-wish",
+    "sumeru-dialogue-first", "sumeru-dialogue-argument", "sumeru-dialogue-after",
+    "liyue-dialogue-main", "liyue-dialogue-final", "ending-tea"].includes(stage)) return stage;
+  return "";
+}
+
+function rememberDialogueFrame(ui) {
+  const group = currentDialogueGroup();
+  if (!group || activeNote) return;
+  if (dialogueHistoryGroup !== group) {
+    dialogueHistoryGroup = group;
+    dialogueHistory = [];
+  }
+  const elements = [...document.querySelectorAll(".character, .character img, .fontaine-background img, #region-background-image, #liyue-found-note")];
+  dialogueHistory.push({
+    stage, dialogueIndex, rizleyDialogueIndex, neuvilletteIndex, sumeruDialogueIndex, endingIndex,
+    ui, speaker: ui.speaker.textContent, text: ui.text.textContent,
+    nextLabel: ui.next.getAttribute("aria-label"),
+    elements: elements.map(element => ({
+      element, hidden: element.hidden, className: element.className,
+      src: element.getAttribute("src"), alt: element.getAttribute("alt"),
+      state: element.getAttribute("data-state")
+    }))
+  });
+  updateDialogueBack();
+}
+
+function updateDialogueBack() {
+  const group = currentDialogueGroup();
+  const visible = !!group && !activeNote && !document.getElementById("story").hidden
+    && (!dialogueBox.hidden || !rizleyDialogue.hidden);
+  const disabled = !visible || group !== dialogueHistoryGroup || dialogueHistory.length < 2;
+  if (dialogueBack.hidden !== !visible) dialogueBack.hidden = !visible;
+  if (dialogueBack.disabled !== disabled) dialogueBack.disabled = disabled;
+}
+
+dialogueBack.addEventListener("click", () => {
+  if (!isLandscape() || dialogueBack.disabled || activeNote || currentDialogueGroup() !== dialogueHistoryGroup) return;
+  dialogueHistory.pop();
+  const frame = dialogueHistory[dialogueHistory.length - 1];
+  if (!frame) return;
+  // Отменяем только паузу текущей реплики; переходы и события сюда не попадают.
+  if (endingTimer) { clearTimeout(endingTimer.id); endingTimer = null; }
+  stage = frame.stage;
+  dialogueIndex = frame.dialogueIndex;
+  rizleyDialogueIndex = frame.rizleyDialogueIndex;
+  neuvilletteIndex = frame.neuvilletteIndex;
+  sumeruDialogueIndex = frame.sumeruDialogueIndex;
+  endingIndex = frame.endingIndex;
+  for (const saved of frame.elements) {
+    saved.element.hidden = saved.hidden;
+    saved.element.className = saved.className;
+    for (const [name, value] of [["src", saved.src], ["alt", saved.alt], ["data-state", saved.state]]) {
+      if (value === null) saved.element.removeAttribute(name);
+      else if (saved.element.getAttribute(name) !== value) saved.element.setAttribute(name, value);
+    }
+  }
+  frame.ui.speaker.textContent = frame.speaker;
+  frame.ui.text.textContent = frame.text;
+  frame.ui.next.disabled = false;
+  frame.ui.next.setAttribute("aria-label", frame.nextLabel || "Следующая реплика");
+  // Следующее обычное нажатие вновь показывает следующую реплику.
+  const now = performance.now();
+  neuvilletteLastTap = now;
+  sumeruLastTap = now;
+  endingLastTap = now;
+  updateDialogueBack();
+});
+
+new MutationObserver(updateDialogueBack).observe(document.getElementById("story"), {
+  subtree: true, attributes: true, attributeFilter: ["hidden"]
+});
+updateDialogueBack();

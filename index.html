@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Настя и Викутория</title>
-  <link rel="stylesheet" href="css/style.css?v=dialogue-panel-1">
-  <script src="js/game.js?v=dialogue-panel-1" defer></script>
+  <link rel="stylesheet" href="css/style.css?v=dialogue-back-1">
+  <script src="js/game.js?v=dialogue-back-1" defer></script>
   <script src="js/startup.js?v=complete-assets-1" defer></script>
 </head>
 <body>
@@ -34,6 +34,7 @@
   <audio id="fontaine-music" src="assets/audio/fontaine_theme.mp3" preload="auto" loop></audio>
   <audio id="scene-music" src="assets/audio/beach_intro_theme.mp3" preload="auto" loop></audio>
   <main id="story" class="page" hidden>
+    <button id="dialogue-back" class="dialogue-back" type="button" aria-label="Предыдущая реплика" title="Назад" disabled hidden>‹</button>
     <button id="music-toggle" class="music-toggle" type="button" aria-label="Отключить или включить фоновую музыку" aria-pressed="false" hidden>Музыка: вкл.</button>
     <section id="beach-scene" class="game-window" aria-label="Первая сцена: пляж">
       <div class="background" aria-hidden="true">
