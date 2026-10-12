@@ -136,7 +136,8 @@ function renderDialogue(sequence = dialogues, index = dialogueIndex, ui = {
 }) {
   const dialogue = sequence[index];
   // Меняем только эмоцию говорящего; второй персонаж сохраняет свой спрайт.
-  document.getElementById(dialogue.target).src = assetRoot + dialogue.sprite;
+  if (ui.setSprite) ui.setSprite(dialogue.target, dialogue.sprite);
+  else document.getElementById(dialogue.target).src = assetRoot + dialogue.sprite;
   ui.speaker.textContent = dialogue.displayName ?? dialogue.speaker;
   ui.text.textContent = dialogue.text;
   ui.characters.forEach((character) => {
@@ -243,6 +244,10 @@ const imagePaths = [
   "assets/images/characters/neuvillette_12_dry_humor.png",
   "assets/images/characters/neuvillette_idle.png",
   "assets/images/ui/wish_package_icon.png",
+  "assets/images/ui/feather_package_icon.png",
+  "assets/images/ui/book_package_icon.png",
+  "assets/images/ui/house_package_icon.png",
+  "assets/images/maps/map_liyue.png",
   "assets/images/maps/map_sumeru.png"
 ];
 const sceneReady = Promise.all(imagePaths.map(preloadImage));
@@ -423,12 +428,17 @@ function showPackageNote(packageType) {
     wolf: { file: "wolf_package_icon.png", alt: "Пиктограмма лапы" },
     flask: { file: "flask_package_icon.png", alt: "Пиктограмма флакона" },
     water: { file: "water_drop_package_icon.png", alt: "Пиктограмма капель" },
-    wish: { file: "wish_package_icon.png", alt: "Символ молитвы" }
+    wish: { file: "wish_package_icon.png", alt: "Символ молитвы" },
+    feather: { file: "feather_package_icon.png", alt: "Символ пера" },
+    book: { file: "book_package_icon.png", alt: "Символ книги" },
+    house: { file: "house_package_icon.png", alt: "Символ дома" }
   };
   const symbol = noteSymbols[packageType];
   if (!symbol) throw new Error("Неизвестный символ записки: " + packageType);
+  const sumeruGift = ["feather", "book", "house"].includes(packageType);
   activeNote = packageType;
-  stage = "fontaine-" + packageType + "-note";
+  stage = (sumeruGift ? "sumeru-" : "fontaine-") + packageType + "-note";
+  if (sumeruGift) sumeruCharacters.forEach(actor => { actor.inert = true; });
   fontaineChest.disabled = true;
   fontaineChest.classList.remove("interactive");
   fontaineNext.hidden = true;
@@ -464,6 +474,12 @@ fontaineContinue.addEventListener("click", () => {
     startNeuvilletteScene();
   } else if (activeNote === "wish") {
     startNeuvilletteAfterWish();
+  } else if (activeNote === "feather") {
+    startSumeruDialogue("first");
+  } else if (activeNote === "book") {
+    startSumeruDialogue("argument");
+  } else if (activeNote === "house") {
+    startSumeruDialogue("after");
   }
 });
 
@@ -831,13 +847,8 @@ function finishNeuvilletteScene() {
   }, 220);
 }
 
-// Следующий сюжет ещё не создан: сохраняем карту и фиксируем выбранный переход.
-registerScene("sumeru_pending", () => {
-  stage = "sumeru-pending";
-  travelMap.hidden = false;
-  teleportButton.disabled = true;
-  teleportButton.setAttribute("aria-label", "Переход в Сумеру подготовлен");
-});
+// Сохраняем существующий идентификатор маршрута карты Сумеру.
+registerScene("sumeru_pending", startSumeruScene);
 
 function updateWishOrientation() {
   if (typeof isLandscape !== "function") return;
@@ -858,3 +869,524 @@ function updateWishOrientation() {
 }
 window.addEventListener("resize", updateWishOrientation);
 window.addEventListener("orientationchange", updateWishOrientation);
+
+
+// Сумеру: тот же renderer, сундук, записки и маршруты карты.
+// Для замены заглушки заполните src существующим путём в sumeruVisuals;
+// идентификаторы поз и сценарий не меняются.
+const sumeruVisuals = {
+  "kaveh_01_greeting": {
+    "name": "Кавех",
+    "label": "приветствие",
+    "src": null
+  },
+  "kaveh_02_concerned": {
+    "name": "Кавех",
+    "label": "обеспокоенность",
+    "src": null
+  },
+  "kaveh_03_worried": {
+    "name": "Кавех",
+    "label": "настороженность",
+    "src": null
+  },
+  "kaveh_04_annoyed": {
+    "name": "Кавех",
+    "label": "раздражение",
+    "src": null
+  },
+  "kaveh_05_reaction": {
+    "name": "Кавех",
+    "label": "реакция",
+    "src": null
+  },
+  "kaveh_06_defensive": {
+    "name": "Кавех",
+    "label": "оправдание",
+    "src": null
+  },
+  "kaveh_07_indignant": {
+    "name": "Кавех",
+    "label": "возмущение",
+    "src": null
+  },
+  "kaveh_08_arguing": {
+    "name": "Кавех",
+    "label": "спор",
+    "src": null
+  },
+  "kaveh_09_explaining": {
+    "name": "Кавех",
+    "label": "объяснение",
+    "src": null
+  },
+  "kaveh_10_exasperated": {
+    "name": "Кавех",
+    "label": "усталое раздражение",
+    "src": null
+  },
+  "kaveh_11_turn_to_nastya": {
+    "name": "Кавех",
+    "label": "обращение к Насте",
+    "src": null
+  },
+  "kaveh_12_gift": {
+    "name": "Кавех",
+    "label": "подарок",
+    "src": null
+  },
+  "kaveh_13_satisfied": {
+    "name": "Кавех",
+    "label": "довольная улыбка",
+    "src": null
+  },
+  "kaveh_14_teasing": {
+    "name": "Кавех",
+    "label": "насмешка",
+    "src": null
+  },
+  "kaveh_15_shouting": {
+    "name": "Кавех",
+    "label": "вспышка раздражения",
+    "src": null
+  },
+  "kaveh_16_confident": {
+    "name": "Кавех",
+    "label": "уверенность",
+    "src": null
+  },
+  "kaveh_17_smug": {
+    "name": "Кавех",
+    "label": "хитрая улыбка",
+    "src": null
+  },
+  "kaveh_18_farewell": {
+    "name": "Кавех",
+    "label": "прощание",
+    "src": null
+  },
+  "alhaitham_01_idle": {
+    "name": "Аль-Хайтам",
+    "label": "невозмутимость",
+    "src": null
+  },
+  "alhaitham_02_disapproving": {
+    "name": "Аль-Хайтам",
+    "label": "сухое замечание",
+    "src": null
+  },
+  "alhaitham_03_skeptical": {
+    "name": "Аль-Хайтам",
+    "label": "скепсис",
+    "src": null
+  },
+  "alhaitham_04_dry_reply": {
+    "name": "Аль-Хайтам",
+    "label": "сарказм",
+    "src": null
+  },
+  "alhaitham_05_questioning": {
+    "name": "Аль-Хайтам",
+    "label": "вопрос",
+    "src": null
+  },
+  "alhaitham_06_ironic": {
+    "name": "Аль-Хайтам",
+    "label": "ирония",
+    "src": null
+  },
+  "alhaitham_07_still_here": {
+    "name": "Аль-Хайтам",
+    "label": "невозмутимое замечание",
+    "src": null
+  },
+  "alhaitham_08_question": {
+    "name": "Аль-Хайтам",
+    "label": "недоумение",
+    "src": null
+  },
+  "alhaitham_09_reasonable": {
+    "name": "Аль-Хайтам",
+    "label": "спокойное возражение",
+    "src": null
+  }
+};
+const sumeruDialogues = {
+  "first": [
+    {
+      "speaker": "Кавех",
+      "text": "Анастасия! Ну наконец-то!",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_01_greeting"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Привет!",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_05_grateful.png"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "С днём рождения! Я бы с удовольствием ещё немного с тобой поболтал, но есть одна проблема.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_02_concerned"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Какая?",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_01_confused.png"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Он скоро придёт.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_03_worried"
+    },
+    {
+      "speaker": "Настя",
+      "text": "Кто?",
+      "target": "sumeru-nastya-sprite",
+      "sprite": "nastya_01_confused.png"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Вот этот невыносимый человек.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_04_annoyed"
+    }
+  ],
+  "argument": [
+    {
+      "speaker": "Аль-Хайтам",
+      "text": "Кавех.",
+      "target": "sumeru-alhaitham-sprite",
+      "sprite": "alhaitham_01_idle"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Что?",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_05_reaction"
+    },
+    {
+      "speaker": "Аль-Хайтам",
+      "text": "Ты опять привёл гостя.",
+      "target": "sumeru-alhaitham-sprite",
+      "sprite": "alhaitham_02_disapproving"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "А что мне оставалось делать? Она пришла ко мне.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_06_defensive"
+    },
+    {
+      "speaker": "Аль-Хайтам",
+      "text": "И поэтому ты решил привести её домой.",
+      "target": "sumeru-alhaitham-sprite",
+      "sprite": "alhaitham_03_skeptical"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Между прочим, это не только твой дом.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_07_indignant"
+    },
+    {
+      "speaker": "Аль-Хайтам",
+      "text": "Ты в нём живёшь. Это разные вещи.",
+      "target": "sumeru-alhaitham-sprite",
+      "sprite": "alhaitham_04_dry_reply"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Вот именно! И раз уж я здесь живу, я тоже могу решить, что в нём должно быть.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_08_arguing"
+    },
+    {
+      "speaker": "Аль-Хайтам",
+      "text": "Например?",
+      "target": "sumeru-alhaitham-sprite",
+      "sprite": "alhaitham_05_questioning"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Например, чтобы здесь было немного уютнее.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_09_explaining"
+    },
+    {
+      "speaker": "Аль-Хайтам",
+      "text": "Тебе не кажется, что ты и так достаточно изменил обстановку?",
+      "target": "sumeru-alhaitham-sprite",
+      "sprite": "alhaitham_06_ironic"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Ой, только не начинай.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_10_exasperated"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Ладно, не будем больше о нём.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_11_turn_to_nastya"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Я вообще-то приготовил для тебя кое-что. Думаю, дома пригодится.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_12_gift"
+    }
+  ],
+  "after": [
+    {
+      "speaker": "Кавех",
+      "text": "Вот. Теперь хоть немного уюта добавится.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_13_satisfied"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "А то если оставить всё на его вкус, мы скоро будем жить среди серых стен и стопок книг.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_14_teasing"
+    },
+    {
+      "speaker": "Аль-Хайтам",
+      "text": "Я всё ещё здесь.",
+      "target": "sumeru-alhaitham-sprite",
+      "sprite": "alhaitham_07_still_here"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Я знаю!",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_15_shouting"
+    },
+    {
+      "speaker": "Аль-Хайтам",
+      "text": "Тогда зачем ты это говоришь?",
+      "target": "sumeru-alhaitham-sprite",
+      "sprite": "alhaitham_08_question"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Чтобы она знала, на чьей стороне быть.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_16_confident"
+    },
+    {
+      "speaker": "Аль-Хайтам",
+      "text": "Не думаю, что она собирается выбирать сторону.",
+      "target": "sumeru-alhaitham-sprite",
+      "sprite": "alhaitham_09_reasonable"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "Это пока.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_17_smug"
+    },
+    {
+      "speaker": "Кавех",
+      "text": "В общем, подарок у тебя. А мне пора спасать этот дом от окончательного превращения в библиотеку.",
+      "target": "sumeru-kaveh-sprite",
+      "sprite": "kaveh_18_farewell"
+    }
+  ]
+};
+const sumeruBackground = document.getElementById("sumeru-background");
+const sumeruLocation = document.getElementById("sumeru-location");
+const sumeruActors = document.getElementById("sumeru-actors");
+const sumeruNastya = document.getElementById("sumeru-nastya");
+const sumeruVikutoria = document.getElementById("sumeru-vikutoria");
+const sumeruKaveh = document.getElementById("sumeru-kaveh");
+const sumeruAlhaitham = document.getElementById("sumeru-alhaitham");
+const sumeruCharacters = [sumeruNastya, sumeruVikutoria, sumeruKaveh, sumeruAlhaitham];
+const sumeruDialogueUI = {
+  ...rizleyDialogueUI,
+  characters: sumeruCharacters,
+  setSprite: setSumeruSprite
+};
+let sumeruSequence = [];
+let sumeruDialogueIndex = 0;
+let sumeruLastTap = -Infinity;
+
+function acceptSumeruTap() {
+  const now = performance.now();
+  if (now - sumeruLastTap < 300) return false;
+  sumeruLastTap = now;
+  return true;
+}
+
+// Универсальная подпись состояния, без запроса отсутствующих файлов.
+function setSumeruSprite(target, state) {
+  let element = document.getElementById(target);
+  const visual = sumeruVisuals[state];
+  if (!visual) {
+    if (element.tagName !== "IMG") throw new Error("Неизвестное состояние: " + state);
+    element.src = assetRoot + state;
+  } else if (visual.src) {
+    if (element.tagName !== "IMG") {
+      const image = document.createElement("img");
+      image.id = target;
+      element.replaceWith(image);
+      element = image;
+    }
+    element.src = visual.src;
+    element.alt = visual.name + " — " + visual.label;
+  } else {
+    if (element.tagName === "IMG") {
+      const placeholder = document.createElement("div");
+      placeholder.id = target;
+      placeholder.className = "scene-placeholder-character";
+      placeholder.setAttribute("role", "img");
+      placeholder.innerHTML = '<span class="placeholder-head" aria-hidden="true"></span><span class="placeholder-body" aria-hidden="true"></span><div class="placeholder-caption"><strong></strong><small></small></div>';
+      element.replaceWith(placeholder);
+      element = placeholder;
+    }
+    element.querySelector("strong").textContent = visual.name + " — " + visual.label;
+    element.querySelector("small").textContent = state;
+    element.setAttribute("aria-label", visual.name + " — " + visual.label + " (" + state + ")");
+  }
+  element.dataset.state = state;
+}
+
+function setSumeruBackground(label) {
+  sumeruLocation.textContent = label;
+  sumeruBackground.hidden = false;
+}
+
+function startSumeruScene() {
+  stage = "sumeru-arrival";
+  nextScene.hidden = false;
+  nextScene.setAttribute("aria-label", "Сумеру");
+  nextScene.classList.add("sumeru-scene");
+  fontaineBackground.hidden = true;
+  [fontaineNastya, fontaineVikutoria, fontaineRizley, fontaineNeuvillette, fontaineChest].forEach(actor => { actor.hidden = true; });
+  activeNote = null;
+  fontaineNoteOverlay.hidden = true;
+  wishAction.hidden = true;
+  rizleyDialogue.hidden = true;
+  rizleyDialogue.classList.remove("dialogue-fade-out");
+  sumeruActors.hidden = false;
+  sumeruCharacters.forEach(actor => {
+    actor.hidden = true;
+    actor.inert = false;
+    actor.classList.remove("is-speaking");
+  });
+  setSumeruSprite("sumeru-nastya-sprite", "nastya_idle.png");
+  setSumeruSprite("sumeru-vikutoria-sprite", "vikutoria_idle.png");
+  setSumeruSprite("sumeru-kaveh-sprite", "kaveh_01_greeting");
+  setSumeruSprite("sumeru-alhaitham-sprite", "alhaitham_01_idle");
+  setSumeruBackground("СУМЕРУ — ПРИБЫТИЕ");
+  fontaineChest.classList.add("sumeru-chest");
+  fontaineChest.classList.remove("interactive");
+  fontaineChest.disabled = true;
+  fontaineChest.inert = false;
+  fontaineNext.hidden = false;
+  fontaineNext.disabled = false;
+  fontaineNext.inert = false;
+  fontaineNext.textContent = "Далее ◆";
+  fontaineNext.setAttribute("aria-label", "Показать Настю и Викуторию");
+  sumeruLastTap = performance.now();
+}
+
+function showSumeruChest() {
+  stage = "sumeru-chest";
+  rizleyDialogue.hidden = true;
+  fontaineNext.hidden = true;
+  sumeruCharacters.forEach(actor => { actor.hidden = true; });
+  setSumeruBackground("СУМЕРУ — СУНДУК");
+  fontaineChest.hidden = false;
+  fontaineChest.disabled = false;
+  fontaineChest.inert = false;
+  fontaineChest.classList.add("interactive");
+  fontaineChest.focus({ preventScroll: true });
+}
+
+function startSumeruDialogue(part) {
+  activeNote = null;
+  fontaineNoteOverlay.hidden = true;
+  stage = "sumeru-dialogue-" + part;
+  sumeruSequence = sumeruDialogues[part];
+  sumeruDialogueIndex = 0;
+  sumeruCharacters.forEach(actor => { actor.inert = false; });
+  sumeruNastya.hidden = false;
+  sumeruKaveh.hidden = false;
+  sumeruVikutoria.hidden = true;
+  sumeruAlhaitham.hidden = part === "first";
+  // Не сбрасываем предыдущие эмоции: renderer меняет только говорящего.
+  setSumeruBackground("СУМЕРУ — ДИАЛОГ");
+  fontaineChest.hidden = true;
+  fontaineChest.disabled = true;
+  fontaineNext.hidden = false;
+  fontaineNext.inert = false;
+  rizleyDialogue.hidden = false;
+  rizleyDialogue.inert = false;
+  sumeruDialogueUI.finalLabel = part === "first" ? "Открыть записку с книгой"
+    : part === "argument" ? "Открыть записку с домом" : "Открыть карту Ли Юэ";
+  renderDialogue(sumeruSequence, sumeruDialogueIndex, sumeruDialogueUI);
+  sumeruLastTap = performance.now();
+  fontaineNext.focus({ preventScroll: true });
+}
+
+fontaineNext.addEventListener("click", () => {
+  if (nextScene.hidden || !isLandscape() || activeNote || !stage.startsWith("sumeru-")) return;
+  if (!["sumeru-arrival", "sumeru-idle", "sumeru-look"].includes(stage) && !stage.startsWith("sumeru-dialogue-")) return;
+  if (!acceptSumeruTap()) return;
+  if (stage === "sumeru-arrival") {
+    stage = "sumeru-idle";
+    sumeruNastya.hidden = false;
+    sumeruVikutoria.hidden = false;
+    fontaineNext.setAttribute("aria-label", "Продолжить");
+  } else if (stage === "sumeru-idle") {
+    stage = "sumeru-look";
+    renderDialogue([{speaker: "Викутория", text: "Смотри!", target: "sumeru-vikutoria-sprite", sprite: "vikutoria_pointing_chest.png"}], 0, sumeruDialogueUI);
+    rizleyDialogue.hidden = false;
+  } else if (stage === "sumeru-look") {
+    showSumeruChest();
+  } else if (sumeruDialogueIndex < sumeruSequence.length - 1) {
+    sumeruDialogueIndex += 1;
+    renderDialogue(sumeruSequence, sumeruDialogueIndex, sumeruDialogueUI);
+  } else if (stage === "sumeru-dialogue-first") {
+    showPackageNote("book");
+  } else if (stage === "sumeru-dialogue-argument") {
+    showPackageNote("house");
+  } else {
+    finishSumeruScene();
+  }
+});
+
+fontaineChest.addEventListener("click", () => {
+  if (nextScene.hidden || !isLandscape() || stage !== "sumeru-chest" || fontaineChest.disabled || !acceptSumeruTap()) return;
+  fontaineChest.disabled = true;
+  showPackageNote("feather");
+});
+
+function finishSumeruScene() {
+  stage = "sumeru-departing";
+  rizleyDialogue.hidden = true;
+  fontaineNext.hidden = true;
+  sumeruActors.classList.add("sumeru-departing");
+  setTimeout(() => {
+    if (stage !== "sumeru-departing") return;
+    sumeruCharacters.forEach(actor => { actor.hidden = true; });
+    sumeruActors.hidden = true;
+    sumeruActors.classList.remove("sumeru-departing");
+    openMap("assets/images/maps/map_liyue.png", "liyue_pending");
+    teleportButton.setAttribute("aria-label", "Телепортироваться в Ли Юэ");
+  }, 220);
+}
+
+// Пока лишь подготовленный маршрут; сцену Чжун Ли здесь не создаём.
+registerScene("liyue_pending", () => {
+  stage = "liyue-pending";
+  travelMap.hidden = false;
+  teleportButton.disabled = true;
+  teleportButton.setAttribute("aria-label", "Переход в Ли Юэ подготовлен");
+});

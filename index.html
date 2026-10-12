@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Настя и Викутория</title>
-  <link rel="stylesheet" href="css/style.css?v=fontaine-audio-scale-2">
-  <script src="js/game.js?v=fontaine-audio-scale-2" defer></script>
+  <link rel="stylesheet" href="css/style.css?v=sumeru-1">
+  <script src="js/game.js?v=sumeru-1" defer></script>
   <script src="js/startup.js?v=map-teleport-1" defer></script>
 </head>
 <body>
@@ -74,6 +74,30 @@
       </div>
       <div id="fontaine-neuvillette" class="character fontaine-person fontaine-rizley" data-fontaine-character="Нёвиллет" hidden>
         <img id="fontaine-neuvillette-sprite" src="assets/images/characters/neuvillette_idle.png" alt="Нёвиллет">
+      </div>
+
+      <div id="sumeru-background" class="scene-placeholder-background" hidden>
+        <span id="sumeru-location"></span>
+      </div>
+      <div id="sumeru-actors" hidden>
+        <div id="sumeru-nastya" class="character sumeru-person sumeru-nastya" data-fontaine-character="Настя" hidden>
+          <img id="sumeru-nastya-sprite" src="assets/images/characters/nastya_idle.png" alt="Настя">
+        </div>
+        <div id="sumeru-vikutoria" class="character sumeru-person sumeru-vikutoria" data-fontaine-character="Викутория" hidden>
+          <img id="sumeru-vikutoria-sprite" src="assets/images/characters/vikutoria_idle.png" alt="Викутория — летающая спутница">
+        </div>
+        <div id="sumeru-kaveh" class="character sumeru-person sumeru-kaveh" data-fontaine-character="Кавех" hidden>
+          <div id="sumeru-kaveh-sprite" class="scene-placeholder-character" role="img">
+            <span class="placeholder-head" aria-hidden="true"></span><span class="placeholder-body" aria-hidden="true"></span>
+            <div class="placeholder-caption"><strong></strong><small></small></div>
+          </div>
+        </div>
+        <div id="sumeru-alhaitham" class="character sumeru-person sumeru-alhaitham" data-fontaine-character="Аль-Хайтам" hidden>
+          <div id="sumeru-alhaitham-sprite" class="scene-placeholder-character" role="img">
+            <span class="placeholder-head" aria-hidden="true"></span><span class="placeholder-body" aria-hidden="true"></span>
+            <div class="placeholder-caption"><strong></strong><small></small></div>
+          </div>
+        </div>
       </div>
       <button id="fontaine-chest" class="fontaine-chest" type="button" aria-label="Открыть сундук" disabled hidden>
         <img src="assets/images/ui/chest.png" alt="">
