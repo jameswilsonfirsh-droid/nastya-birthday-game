@@ -167,3 +167,11 @@ const orientationQuery = window.matchMedia("(orientation: landscape)");
 if (orientationQuery.addEventListener) orientationQuery.addEventListener("change", updateOrientation);
 else orientationQuery.addListener(updateOrientation);
 updateOrientation();
+
+// Пляж готовим только после получения видео, без конкуренции за первый запуск.
+function prepareBeachAfterVideoDownload() {
+  if (!Number.isFinite(loadingVideo.duration) || !loadingVideo.buffered.length) return;
+  if (loadingVideo.buffered.end(loadingVideo.buffered.length - 1) >= loadingVideo.duration - .25) prepareBeachImages();
+}
+loadingVideo.addEventListener("progress", prepareBeachAfterVideoDownload);
+loadingVideo.addEventListener("ended", prepareBeachImages);

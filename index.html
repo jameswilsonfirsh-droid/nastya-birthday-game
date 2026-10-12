@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Настя и Викутория</title>
   <link rel="stylesheet" href="css/style.css?v=dialogue-gradient-2">
-  <script src="js/game.js?v=dialogue-back-1" defer></script>
-  <script src="js/startup.js?v=enter-seven-seconds" defer></script>
+  <script src="js/game.js?v=lazy-startup-1" defer></script>
+  <script src="js/startup.js?v=lazy-startup-1" defer></script>
 </head>
 <body>
   <div id="orientation-screen" class="technical-screen orientation-screen">
@@ -22,30 +22,30 @@
     <button id="enter-button" class="technical-button enter-button" type="button" hidden>Войти</button>
   </section>
   <section id="wish-video-overlay" class="wish-video-overlay" aria-label="Анимация молитвы" hidden>
-    <video id="wish-video" src="assets/video/wish_animation.mp4" playsinline webkit-playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
+    <video id="wish-video" src="assets/video/wish_animation.mp4" playsinline webkit-playsinline preload="none" disablepictureinpicture disableremoteplayback></video>
     <div id="wish-video-retry" class="wish-video-retry" hidden>
       <p id="wish-video-error" role="status"></p>
       <button id="wish-retry-button" class="wish-button" type="button">Совершить молитву</button>
     </div>
   </section>
-  <audio id="sumeru-music" src="assets/audio/sumeru_theme.mp3" preload="auto" loop></audio>
-  <audio id="liyue-music" src="assets/audio/liyue_theme.mp3" preload="auto" loop></audio>
-  <audio id="chenyu-music" src="assets/audio/chenyu_final_theme.mp3" preload="auto" loop></audio>
-  <audio id="fontaine-music" src="assets/audio/fontaine_theme.mp3" preload="auto" loop></audio>
-  <audio id="scene-music" src="assets/audio/beach_intro_theme.mp3" preload="auto" loop></audio>
+  <audio id="sumeru-music" src="assets/audio/sumeru_theme.mp3" preload="none" loop></audio>
+  <audio id="liyue-music" src="assets/audio/liyue_theme.mp3" preload="none" loop></audio>
+  <audio id="chenyu-music" src="assets/audio/chenyu_final_theme.mp3" preload="none" loop></audio>
+  <audio id="fontaine-music" src="assets/audio/fontaine_theme.mp3" preload="none" loop></audio>
+  <audio id="scene-music" src="assets/audio/beach_intro_theme.mp3" preload="none" loop></audio>
   <main id="story" class="page" hidden>
     <button id="dialogue-back" class="dialogue-back" type="button" aria-label="Предыдущая реплика" title="Назад" disabled hidden>‹</button>
     <button id="music-toggle" class="music-toggle" type="button" aria-label="Отключить или включить фоновую музыку" aria-pressed="false" hidden>Музыка: вкл.</button>
     <section id="beach-scene" class="game-window" aria-label="Первая сцена: пляж">
       <div class="background" aria-hidden="true">
-        <img id="background" src="assets/images/backgrounds/beach.png" alt="">
+        <img id="background" data-src="assets/images/backgrounds/beach.png" alt="">
       </div>
       <div id="characters" class="characters" aria-label="Персонажи сцены" hidden>
         <div class="character character-left" data-character="Настя">
-          <img id="characterLeft" src="assets/images/characters/nastya_idle.png" alt="Настя">
+          <img id="characterLeft" data-src="assets/images/characters/nastya_idle.png" alt="Настя">
         </div>
         <div class="character character-right" data-character="Викутория">
-          <img id="characterRight" src="assets/images/characters/vikutoria_idle.png" alt="Викутория — летающая спутница Насти">
+          <img id="characterRight" data-src="assets/images/characters/vikutoria_idle.png" alt="Викутория — летающая спутница Насти">
         </div>
       </div>
       <div id="dialogue-box" class="dialogue-box" hidden>
@@ -57,59 +57,59 @@
       <button id="next-button" class="next-button" type="button" aria-label="Показать персонажей" disabled>Далее <span aria-hidden="true">◆</span></button>
     </section>
     <section id="travel-map" class="game-window travel-map" aria-label="Карта путешествия" hidden>
-      <img id="travel-map-image" class="travel-map-image" src="assets/images/maps/map_fontaine_rizley.png" alt="Карта путешествия">
+      <img id="travel-map-image" class="travel-map-image" data-src="assets/images/maps/map_fontaine_rizley.png" alt="Карта путешествия">
       <button id="teleport-button" class="teleport-button interactive-object" type="button" aria-label="Телепортироваться в следующую локацию">
-        <img src="assets/images/ui/teleport_icon.png" alt="">
+        <img data-src="assets/images/ui/teleport_icon.png" alt="">
       </button>
     </section>
     <section id="next-scene" class="game-window fontaine-scene" aria-label="Фонтейн" hidden>
       <div id="fontaine-background" class="fontaine-background" aria-hidden="true">
-        <img id="fontaine-background-arrival" src="assets/images/backgrounds/fontaine_arrival_bg.png" alt="">
-        <img id="fontaine-background-chest" src="assets/images/backgrounds/fontaine_chest_bg.png" alt="" hidden>
-        <img id="fontaine-background-neuvillette" src="assets/images/backgrounds/fontaine_neuvillette_bg.png" alt="" hidden>
+        <img id="fontaine-background-arrival" data-src="assets/images/backgrounds/fontaine_arrival_bg.png" alt="">
+        <img id="fontaine-background-chest" data-src="assets/images/backgrounds/fontaine_chest_bg.png" alt="" hidden>
+        <img id="fontaine-background-neuvillette" data-src="assets/images/backgrounds/fontaine_neuvillette_bg.png" alt="" hidden>
       </div>
       <div id="fontaine-nastya" class="character fontaine-person fontaine-nastya" data-fontaine-character="Настя" hidden>
-        <img id="fontaine-nastya-sprite" src="assets/images/characters/nastya_idle.png" alt="Настя">
+        <img id="fontaine-nastya-sprite" data-src="assets/images/characters/nastya_idle.png" alt="Настя">
       </div>
       <div id="fontaine-vikutoria" class="character fontaine-person fontaine-vikutoria" data-fontaine-character="Викутория" hidden>
-        <img id="fontaine-vikutoria-sprite" src="assets/images/characters/vikutoria_idle.png" alt="Викутория">
+        <img id="fontaine-vikutoria-sprite" data-src="assets/images/characters/vikutoria_idle.png" alt="Викутория">
       </div>
       <div id="fontaine-rizley" class="character fontaine-person fontaine-rizley" data-fontaine-character="Ризли" hidden>
-        <img id="fontaine-rizley-sprite" src="assets/images/characters/rizley_idle.png" alt="Ризли">
+        <img id="fontaine-rizley-sprite" data-src="assets/images/characters/rizley_idle.png" alt="Ризли">
       </div>
       <div id="fontaine-neuvillette" class="character fontaine-person fontaine-rizley" data-fontaine-character="Нёвиллет" hidden>
-        <img id="fontaine-neuvillette-sprite" src="assets/images/characters/neuvillette_idle.png" alt="Нёвиллет">
+        <img id="fontaine-neuvillette-sprite" data-src="assets/images/characters/neuvillette_idle.png" alt="Нёвиллет">
       </div>
 
       <div id="sumeru-background" class="scene-art-background" hidden>
-        <img id="region-background-image" src="assets/images/backgrounds/sumeru_arrival_bg.png" alt="" decoding="async">
+        <img id="region-background-image" data-src="assets/images/backgrounds/sumeru_arrival_bg.png" alt="" decoding="async">
       </div>
       <div id="sumeru-actors" hidden>
         <div id="sumeru-nastya" class="character sumeru-person sumeru-nastya" data-fontaine-character="Настя" hidden>
-          <img id="sumeru-nastya-sprite" src="assets/images/characters/nastya_idle.png" alt="Настя">
+          <img id="sumeru-nastya-sprite" data-src="assets/images/characters/nastya_idle.png" alt="Настя">
         </div>
         <div id="sumeru-vikutoria" class="character sumeru-person sumeru-vikutoria" data-fontaine-character="Викутория" hidden>
-          <img id="sumeru-vikutoria-sprite" src="assets/images/characters/vikutoria_idle.png" alt="Викутория — летающая спутница">
+          <img id="sumeru-vikutoria-sprite" data-src="assets/images/characters/vikutoria_idle.png" alt="Викутория — летающая спутница">
         </div>
         <div id="sumeru-kaveh" class="character sumeru-person sumeru-kaveh" data-fontaine-character="Кавех" hidden>
-          <img id="sumeru-kaveh-sprite" src="assets/images/characters/kaveh_01_greeting.png" alt="Кавех">
+          <img id="sumeru-kaveh-sprite" data-src="assets/images/characters/kaveh_01_greeting.png" alt="Кавех">
         </div>
         <div id="sumeru-alhaitham" class="character sumeru-person sumeru-alhaitham" data-fontaine-character="Аль-Хайтам" hidden>
-          <img id="sumeru-alhaitham-sprite" src="assets/images/characters/alhaitham_01_idle.png" alt="Аль-Хайтам">
+          <img id="sumeru-alhaitham-sprite" data-src="assets/images/characters/alhaitham_01_idle.png" alt="Аль-Хайтам">
         </div>
       </div>
 
       <div id="ending-zhongli" class="character sumeru-person ending-zhongli" data-fontaine-character="Чжун Ли" hidden>
-        <img id="ending-zhongli-sprite" src="assets/images/characters/zhongli_01_greeting.png" alt="Чжун Ли">
+        <img id="ending-zhongli-sprite" data-src="assets/images/characters/zhongli_01_greeting.png" alt="Чжун Ли">
       </div>
       <button id="liyue-found-note" class="liyue-found-note interactive-object" type="button" aria-label="Прочитать найденную записку с Морой" disabled hidden>
-        <img src="assets/images/ui/liyue_mora_note.png" alt="Записка с монетой Мора">
+        <img data-src="assets/images/ui/liyue_mora_note.png" alt="Записка с монетой Мора">
       </button>
       <div id="ending-final-screen" class="ending-final-screen" hidden>
         <p>Продолжение следует…</p>
       </div>
       <button id="fontaine-chest" class="fontaine-chest interactive-object" type="button" aria-label="Открыть сундук" disabled hidden>
-        <img src="assets/images/ui/chest.png" alt="">
+        <img data-src="assets/images/ui/chest.png" alt="">
       </button>
       <div id="rizley-dialogue" class="dialogue-box" hidden>
         <div class="dialogue-content" aria-live="polite" aria-atomic="true">
@@ -124,10 +124,10 @@
       </div>
       <div id="fontaine-note-overlay" class="fontaine-note-overlay" hidden>
         <div class="fontaine-note" role="dialog" aria-modal="true" aria-labelledby="fontaine-note-text">
-          <img class="note-parchment" src="assets/images/ui/mysterious_note.png" alt="">
+          <img class="note-parchment" data-src="assets/images/ui/mysterious_note.png" alt="">
           <div class="note-content">
             <p id="fontaine-note-text">Открой свёрток с этим символом</p>
-            <img id="fontaine-note-icon" src="assets/images/ui/wolf_package_icon.png" alt="Пиктограмма лапы">
+            <img id="fontaine-note-icon" data-src="assets/images/ui/wolf_package_icon.png" alt="Пиктограмма лапы">
             <button id="fontaine-note-continue" type="button">Продолжить</button>
           </div>
         </div>

@@ -75,14 +75,7 @@ function unlockBackgroundMusic(context) {
       musicGains.set(audio, gain);
     } catch { setMusicLevel(audio, 0); }
     audio.dataset.level = "0";
-    // Разрешение каждому элементу даётся в пользовательском жесте, с нулевым gain.
-    try {
-      const playback = audio.play();
-      if (playback) playback.then(() => {
-        if (audio !== currentMusic) { audio.pause(); audio.currentTime = 0; }
-      }).catch(() => {});
-      else audio.pause();
-    } catch { /* Повторим на следующем пользовательском жесте. */ }
+    // Только подключаем gain: реальные треки запускаются при входе в регион.
   }
 }
 
@@ -364,7 +357,16 @@ const imagePaths = [
   "assets/images/maps/map_liyue.png",
   "assets/images/maps/map_sumeru.png"
 ];
-const sceneReady = Promise.all(imagePaths.map(preloadImage));
+// Не ставим запуск видео и вход в игру в зависимость от загрузки всех глав.
+const sceneReady = Promise.resolve();
+let beachPreloadStarted = false;
+function prepareBeachImages() {
+  if (beachPreloadStarted) return;
+  beachPreloadStarted = true;
+  const paths = ["assets/images/backgrounds/beach.png", assetRoot + "nastya_idle.png",
+    assetRoot + "vikutoria_idle.png", ...dialogues.map(row => assetRoot + row.sprite)];
+  return Promise.all([...new Set(paths)].map(preloadImage));
+}
 
 // Один экран карты для всех путешествий: путь к изображению и имя следующей сцены.
 const beachScene = document.getElementById("beach-scene");
@@ -2113,3 +2115,18 @@ new MutationObserver(updateDialogueBack).observe(document.getElementById("story"
   subtree: true, attributes: true, attributeFilter: ["hidden"]
 });
 updateDialogueBack();
+
+// Статические PNG скрытых сцен не занимают соединение перед загрузочным видео.
+function loadVisibleSceneImages() {
+  document.querySelectorAll("img[data-src]").forEach(image => {
+    if (!image.getAttribute("src") && image.getClientRects().length) {
+      image.src = image.dataset.src;
+      image.removeAttribute("data-src");
+    }
+  });
+}
+new MutationObserver(loadVisibleSceneImages).observe(document.getElementById("story"), {
+  subtree: true, attributes: true, attributeFilter: ["hidden"]
+});
+window.addEventListener("resize", loadVisibleSceneImages);
+loadVisibleSceneImages();
