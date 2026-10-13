@@ -1,0 +1,41 @@
+name: Optimize startup video
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/optimize-startup-video.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  faststart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Move MP4 metadata to the beginning
+        run: |
+          ffmpeg -y \
+            -i assets/video/genshin-loading.mp4 \
+            -map 0 \
+            -c copy \
+            -movflags +faststart \
+            /tmp/genshin-loading.mp4
+          mv /tmp/genshin-loading.mp4 assets/video/genshin-loading.mp4
+
+      - name: Commit optimized video
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/video/genshin-loading.mp4
+          if git diff --cached --quiet; then
+            echo "Video is already optimized."
+          else
+            git commit -m "Optimize startup video for faster playback"
+            git push
+          fi
