@@ -245,127 +245,299 @@ nextButton.addEventListener("click", () => {
   renderDialogue();
 });
 
-// Загружаем спрайты заранее, чтобы смена эмоций не оставляла пустой кадр.
-function preloadImage(path) {
-  return new Promise((resolve) => {
-    const image = new Image();
-    image.onload = resolve;
-    image.onerror = () => {
-      console.warn("Не удалось загрузить изображение:", path);
-      resolve();
-    };
+// Каждый телепорт загружает только следующий сюжетный отрезок. Четыре параллельных
+// запроса не перегружают память iPhone большими PNG, а общие файлы не скачиваются повторно.
+const assetLoadingScreen = document.getElementById("asset-loading-screen");
+const assetLoadPromises = new Map();
+const bundleLoadPromises = new Map();
+const PRELOAD_CONCURRENCY = 4;
+const MIN_LOADING_SCREEN_TIME = 450;
+
+const preloadBundles = {
+  startup: {
+    media: ["loading-video", "scene-music"],
+    images: [
+      "assets/images/backgrounds/beach.png",
+      "assets/images/maps/map_fontaine_rizley.png",
+      "assets/images/ui/teleport_icon.png",
+      assetRoot + "nastya_idle.png",
+      assetRoot + "vikutoria_idle.png",
+      ...dialogues.map(dialogue => assetRoot + dialogue.sprite)
+    ]
+  },
+  rizley_scene: {
+    media: ["fontaine-music", "wish-video"],
+    images: [
+      "assets/images/backgrounds/fontaine_arrival_bg.png",
+      "assets/images/backgrounds/fontaine_chest_bg.png",
+      "assets/images/backgrounds/fontaine_neuvillette_bg.png",
+      "assets/images/maps/map_sumeru.png",
+      "assets/images/ui/chest.png",
+      "assets/images/ui/mysterious_note.png",
+      "assets/images/ui/wolf_package_icon.png",
+      "assets/images/ui/flask_package_icon.png",
+      "assets/images/ui/water_drop_package_icon.png",
+      "assets/images/ui/wish_package_icon.png",
+      assetRoot + "nastya_idle.png",
+      assetRoot + "nastya_01_confused.png",
+      assetRoot + "nastya_03_speechless.png",
+      assetRoot + "nastya_04_teasing.png",
+      assetRoot + "nastya_05_grateful.png",
+      assetRoot + "nastya_06_awkward_admission.png",
+      assetRoot + "nastya_07_already.png",
+      assetRoot + "vikutoria_idle.png",
+      assetRoot + "vikutoria_pointing_chest.png",
+      assetRoot + "rizley_idle.png",
+      assetRoot + "rizley_01_greeting.png",
+      assetRoot + "rizley_02_waiting.png",
+      assetRoot + "rizley_03_smug.png",
+      assetRoot + "rizley_04_gift.png",
+      assetRoot + "rizley_05_hope_you_liked_it.png",
+      assetRoot + "rizley_06_not_jealous.png",
+      assetRoot + "rizley_07_rain_hint.png",
+      assetRoot + "neuvillette_idle.png",
+      assetRoot + "neuvillette_01_greeting.png",
+      assetRoot + "neuvillette_02_concerned.png",
+      assetRoot + "neuvillette_03_knowing.png",
+      assetRoot + "neuvillette_04_my_turn.png",
+      assetRoot + "neuvillette_05_curious.png",
+      assetRoot + "neuvillette_06_proposition.png",
+      assetRoot + "neuvillette_07_fate.png",
+      assetRoot + "neuvillette_08_result.png",
+      assetRoot + "neuvillette_09_birthday_wish.png",
+      assetRoot + "neuvillette_10_farewell.png",
+      assetRoot + "neuvillette_11_next_guide.png",
+      assetRoot + "neuvillette_12_dry_humor.png"
+    ]
+  },
+  sumeru_pending: {
+    media: ["sumeru-music"],
+    images: [
+      "assets/images/backgrounds/sumeru_arrival_bg.png",
+      "assets/images/backgrounds/sumeru_house_bg.png",
+      "assets/images/maps/map_liyue.png",
+      "assets/images/ui/chest.png",
+      "assets/images/ui/mysterious_note.png",
+      "assets/images/ui/feather_package_icon.png",
+      "assets/images/ui/book_package_icon.png",
+      "assets/images/ui/house_package_icon.png",
+      assetRoot + "nastya_idle.png",
+      assetRoot + "nastya_08_happy_greeting.png",
+      assetRoot + "nastya_09_curious.png",
+      assetRoot + "nastya_10_suspicious.png",
+      assetRoot + "vikutoria_idle.png",
+      assetRoot + "vikutoria_pointing_chest.png",
+      assetRoot + "kaveh_01_greeting.png",
+      assetRoot + "kaveh_02_concerned.png",
+      assetRoot + "kaveh_03_worried.png",
+      assetRoot + "kaveh_04_annoyed.png",
+      assetRoot + "kaveh_05_reaction.png",
+      assetRoot + "kaveh_06_defensive.png",
+      assetRoot + "kaveh_07_indignant.png",
+      assetRoot + "kaveh_09_explaining.png",
+      assetRoot + "kaveh_11_turn_to_nastya.png",
+      assetRoot + "kaveh_12_gift.png",
+      assetRoot + "kaveh_14_teasing.png",
+      assetRoot + "kaveh_15_shouting.png",
+      assetRoot + "kaveh_16_confident.png",
+      assetRoot + "kaveh_18_farewell.png",
+      assetRoot + "alhaitham_01_idle.png",
+      assetRoot + "alhaitham_02_disapproving.png",
+      assetRoot + "alhaitham_03_skeptical.png",
+      assetRoot + "alhaitham_04_dry_reply.png",
+      assetRoot + "alhaitham_08_question.png",
+      assetRoot + "alhaitham_09_reasonable.png"
+    ]
+  },
+  liyue_pending: {
+    media: ["liyue-music", "chenyu-music"],
+    images: [
+      "assets/images/backgrounds/liyue_arrival_bg.png",
+      "assets/images/backgrounds/liyue_zhongli_bg.png",
+      "assets/images/backgrounds/chenyu_tea_scene.png",
+      "assets/images/backgrounds/final_group_photo.png",
+      "assets/images/ui/liyue_mora_note.png",
+      "assets/images/ui/mysterious_note.png",
+      "assets/images/ui/mora_package_icon.png",
+      "assets/images/ui/tea_package_icon.png",
+      assetRoot + "nastya_idle.png",
+      assetRoot + "nastya_01_confused.png",
+      assetRoot + "nastya_02_done.png",
+      assetRoot + "nastya_05_grateful.png",
+      assetRoot + "nastya_07_already.png",
+      assetRoot + "nastya_11_tired_irony.png",
+      assetRoot + "nastya_12_warm_smile.png",
+      assetRoot + "nastya_13_tea_surprise.png",
+      assetRoot + "vikutoria_idle.png",
+      assetRoot + "vikutoria_pointing_chest.png",
+      assetRoot + "vikutoria_03_curious_mora.png",
+      assetRoot + "zhongli_01_greeting.png",
+      assetRoot + "zhongli_03_reassuring.png",
+      assetRoot + "zhongli_04_birthday.png",
+      assetRoot + "zhongli_05_gift.png",
+      assetRoot + "zhongli_06_reflective.png",
+      assetRoot + "zhongli_08_pleased.png",
+      assetRoot + "zhongli_09_gentle.png",
+      assetRoot + "zhongli_10_warm_wish.png",
+      assetRoot + "zhongli_11_invitation.png",
+      assetRoot + "zhongli_12_osmanthus.png",
+      assetRoot + "zhongli_13_tea.png",
+      assetRoot + "zhongli_14_exception.png"
+    ]
+  }
+};
+
+function activateStaticImage(path) {
+  document.querySelectorAll("img[data-src]").forEach(image => {
+    if (image.dataset.src !== path) return;
     image.src = path;
+    image.removeAttribute("data-src");
   });
 }
 
-const imagePaths = [
-  "assets/images/backgrounds/chenyu_tea_scene.png",
-  "assets/images/backgrounds/final_group_photo.png",
-  "assets/images/backgrounds/liyue_arrival_bg.png",
-  "assets/images/backgrounds/liyue_zhongli_bg.png",
-  "assets/images/backgrounds/sumeru_arrival_bg.png",
-  "assets/images/backgrounds/sumeru_house_bg.png",
-  "assets/images/characters/alhaitham_01_idle.png",
-  "assets/images/characters/alhaitham_02_disapproving.png",
-  "assets/images/characters/alhaitham_03_skeptical.png",
-  "assets/images/characters/alhaitham_04_dry_reply.png",
-  "assets/images/characters/alhaitham_08_question.png",
-  "assets/images/characters/alhaitham_09_reasonable.png",
-  "assets/images/characters/kaveh_01_greeting.png",
-  "assets/images/characters/kaveh_02_concerned.png",
-  "assets/images/characters/kaveh_03_worried.png",
-  "assets/images/characters/kaveh_04_annoyed.png",
-  "assets/images/characters/kaveh_05_reaction.png",
-  "assets/images/characters/kaveh_06_defensive.png",
-  "assets/images/characters/kaveh_07_indignant.png",
-  "assets/images/characters/kaveh_09_explaining.png",
-  "assets/images/characters/kaveh_11_turn_to_nastya.png",
-  "assets/images/characters/kaveh_12_gift.png",
-  "assets/images/characters/kaveh_14_teasing.png",
-  "assets/images/characters/kaveh_15_shouting.png",
-  "assets/images/characters/kaveh_16_confident.png",
-  "assets/images/characters/kaveh_18_farewell.png",
-  "assets/images/characters/nastya_08_happy_greeting.png",
-  "assets/images/characters/nastya_09_curious.png",
-  "assets/images/characters/nastya_10_suspicious.png",
-  "assets/images/characters/nastya_11_tired_irony.png",
-  "assets/images/characters/nastya_12_warm_smile.png",
-  "assets/images/characters/nastya_13_tea_surprise.png",
-  "assets/images/characters/vikutoria_03_curious_mora.png",
-  "assets/images/characters/zhongli_01_greeting.png",
-  "assets/images/characters/zhongli_03_reassuring.png",
-  "assets/images/characters/zhongli_04_birthday.png",
-  "assets/images/characters/zhongli_05_gift.png",
-  "assets/images/characters/zhongli_06_reflective.png",
-  "assets/images/characters/zhongli_08_pleased.png",
-  "assets/images/characters/zhongli_09_gentle.png",
-  "assets/images/characters/zhongli_10_warm_wish.png",
-  "assets/images/characters/zhongli_11_invitation.png",
-  "assets/images/characters/zhongli_12_osmanthus.png",
-  "assets/images/characters/zhongli_13_tea.png",
-  "assets/images/characters/zhongli_14_exception.png",
-  "assets/images/ui/liyue_mora_note.png",
+function preloadImage(path) {
+  const key = "image:" + path;
+  if (assetLoadPromises.has(key)) return assetLoadPromises.get(key);
+  const promise = new Promise(resolve => {
+    let image = new Image();
+    let settled = false;
+    const finish = loaded => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      image.onload = null;
+      image.onerror = null;
+      if (loaded) activateStaticImage(path);
+      else console.warn("Не удалось заранее загрузить изображение:", path);
+      image = null;
+      resolve(loaded);
+    };
+    const timeout = setTimeout(() => finish(false), 45000);
+    image.decoding = "async";
+    image.onload = () => {
+      const decoding = typeof image.decode === "function" ? image.decode() : null;
+      if (decoding) decoding.then(() => finish(true), () => finish(true));
+      else finish(true);
+    };
+    image.onerror = () => finish(false);
+    image.src = path;
+  });
+  assetLoadPromises.set(key, promise);
+  promise.then(loaded => {
+    if (!loaded && assetLoadPromises.get(key) === promise) assetLoadPromises.delete(key);
+  });
+  return promise;
+}
 
-  "assets/images/backgrounds/beach.png",
-  assetRoot + "nastya_idle.png",
-  assetRoot + "vikutoria_idle.png",
-  ...dialogues.map((dialogue) => assetRoot + dialogue.sprite),
-  "assets/images/backgrounds/fontaine_arrival_bg.png",
-  "assets/images/backgrounds/fontaine_chest_bg.png",
-  "assets/images/backgrounds/fontaine_neuvillette_bg.png",
-  "assets/images/ui/chest.png",
-  "assets/images/ui/mysterious_note.png",
-  "assets/images/ui/wolf_package_icon.png",
-  "assets/images/ui/flask_package_icon.png",
-  assetRoot + "vikutoria_pointing_chest.png",
-  assetRoot + "nastya_03_speechless.png",
-  assetRoot + "nastya_04_teasing.png",
-  assetRoot + "rizley_idle.png",
-  assetRoot + "rizley_01_greeting.png",
-  assetRoot + "rizley_02_waiting.png",
-  assetRoot + "rizley_03_smug.png",
-  assetRoot + "rizley_04_gift.png",
-  assetRoot + "rizley_05_hope_you_liked_it.png",
-  assetRoot + "nastya_05_grateful.png",
-  assetRoot + "rizley_06_not_jealous.png",
-  assetRoot + "rizley_07_rain_hint.png",
-  "assets/images/ui/water_drop_package_icon.png",
-  "assets/images/characters/neuvillette_01_greeting.png",
-  "assets/images/characters/nastya_01_confused.png",
-  "assets/images/characters/neuvillette_02_concerned.png",
-  "assets/images/characters/neuvillette_03_knowing.png",
-  "assets/images/characters/nastya_06_awkward_admission.png",
-  "assets/images/characters/neuvillette_04_my_turn.png",
-  "assets/images/characters/neuvillette_05_curious.png",
-  "assets/images/characters/neuvillette_06_proposition.png",
-  "assets/images/characters/neuvillette_07_fate.png",
-  "assets/images/characters/neuvillette_08_result.png",
-  "assets/images/characters/neuvillette_09_birthday_wish.png",
-  "assets/images/characters/nastya_05_grateful.png",
-  "assets/images/characters/neuvillette_10_farewell.png",
-  "assets/images/characters/nastya_07_already.png",
-  "assets/images/characters/nastya_04_teasing.png",
-  "assets/images/characters/neuvillette_11_next_guide.png",
-  "assets/images/characters/neuvillette_12_dry_humor.png",
-  "assets/images/characters/neuvillette_idle.png",
-  "assets/images/ui/wish_package_icon.png",
-  "assets/images/ui/feather_package_icon.png",
-  "assets/images/ui/book_package_icon.png",
-  "assets/images/ui/house_package_icon.png",
-  "assets/images/ui/mora_package_icon.png",
-  "assets/images/ui/tea_package_icon.png",
-  "assets/images/maps/map_liyue.png",
-  "assets/images/maps/map_sumeru.png"
-];
+function preloadMediaElement(id) {
+  const key = "media:" + id;
+  if (assetLoadPromises.has(key)) return assetLoadPromises.get(key);
+  const element = document.getElementById(id);
+  if (!element) return Promise.resolve(false);
+  const promise = new Promise(resolve => {
+    let settled = false;
+    const events = ["loadeddata", "canplay", "canplaythrough", "progress", "durationchange", "error"];
+    // Safari часто не буферизует поставленное на паузу видео целиком. Первого
+    // декодированного кадра достаточно: fast-start MP4 продолжит поток при play().
+    const isReady = () => element.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
+    const finish = loaded => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      events.forEach(eventName => element.removeEventListener(eventName, onReady));
+      if (!loaded) console.warn("Медиа продолжит загружаться в фоне:", element.currentSrc || element.src);
+      resolve(loaded);
+    };
+    const onReady = event => {
+      if (event.type === "error") finish(false);
+      else if (isReady()) finish(true);
+    };
+    const timeout = setTimeout(() => finish(false), 30000);
+    events.forEach(eventName => element.addEventListener(eventName, onReady));
+    element.preload = "auto";
+    try {
+      if (isReady()) finish(true);
+      else element.load();
+    } catch { finish(false); }
+  });
+  assetLoadPromises.set(key, promise);
+  promise.then(loaded => {
+    if (!loaded && assetLoadPromises.get(key) === promise) assetLoadPromises.delete(key);
+  });
+  return promise;
+}
+
+async function preloadImages(paths) {
+  const queue = [...new Set(paths)];
+  const results = new Array(queue.length);
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < queue.length) {
+      const index = nextIndex;
+      const path = queue[index];
+      nextIndex += 1;
+      results[index] = await preloadImage(path);
+    }
+  }
+  const workerCount = Math.min(PRELOAD_CONCURRENCY, queue.length);
+  await Promise.all(Array.from({ length: workerCount }, worker));
+  return results.every(Boolean);
+}
+
+function preloadStoryBundle(bundleName) {
+  const bundle = preloadBundles[bundleName];
+  if (!bundle) return Promise.reject(new Error("Неизвестный пакет ресурсов: " + bundleName));
+  let loading = bundleLoadPromises.get(bundleName);
+  if (!loading) {
+    loading = Promise.all([
+      preloadImages(bundle.images),
+      ...bundle.media.map(preloadMediaElement)
+    ]).then(results => results.every(Boolean));
+    bundleLoadPromises.set(bundleName, loading);
+    loading.then(loaded => {
+      if (!loaded && bundleLoadPromises.get(bundleName) === loading) bundleLoadPromises.delete(bundleName);
+    });
+  }
+  const deadline = bundleName === "startup" ? 60000 : 120000;
+  let deadlineTimer;
+  const timeout = new Promise(resolve => {
+    deadlineTimer = setTimeout(() => {
+      console.warn("Часть ресурсов продолжит загружаться в фоне:", bundleName);
+      resolve(false);
+    }, deadline);
+  });
+  const promise = Promise.race([loading, timeout]).finally(() => clearTimeout(deadlineTimer));
+  return promise;
+}
+
+function setAssetLoadingVisible(visible) {
+  assetLoadingScreen.hidden = !visible;
+  assetLoadingScreen.inert = !visible;
+  assetLoadingScreen.setAttribute("aria-busy", String(visible));
+  document.body.setAttribute("aria-busy", String(visible));
+}
+
+async function runAssetLoadingTransition(bundleName, continuation) {
+  setAssetLoadingVisible(true);
+  const minimumDisplay = new Promise(resolve => setTimeout(resolve, MIN_LOADING_SCREEN_TIME));
+  try {
+    await Promise.all([preloadStoryBundle(bundleName), minimumDisplay]);
+    if (typeof continuation === "function") continuation();
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  } finally {
+    setAssetLoadingVisible(false);
+  }
+}
+
+window.preloadStoryBundle = preloadStoryBundle;
+window.runAssetLoadingTransition = runAssetLoadingTransition;
 // Не ставим запуск видео и вход в игру в зависимость от загрузки всех глав.
 const sceneReady = Promise.resolve();
 let beachPreloadStarted = false;
 function prepareBeachImages() {
-  if (beachPreloadStarted) return;
+  if (beachPreloadStarted) return preloadStoryBundle("startup");
   beachPreloadStarted = true;
-  const paths = ["assets/images/backgrounds/beach.png", assetRoot + "nastya_idle.png",
-    assetRoot + "vikutoria_idle.png", ...dialogues.map(row => assetRoot + row.sprite)];
-  return Promise.all([...new Set(paths)].map(preloadImage));
+  return preloadStoryBundle("startup");
 }
 
 // Один экран карты для всех путешествий: путь к изображению и имя следующей сцены.
@@ -423,9 +595,17 @@ teleportButton.addEventListener("click", () => {
   if (travelMap.hidden || !isLandscape() || !travelDestination || teleportButton.disabled) return;
   teleportButton.disabled = true;
   const destination = travelDestination;
-  travelDestination = null;
-  travelMap.hidden = true;
-  launchScene(destination);
+  runAssetLoadingTransition(destination, () => {
+    if (travelDestination !== destination) return;
+    launchScene(destination);
+    travelDestination = null;
+  }).catch(error => {
+    console.error("Не удалось завершить переход между главами:", error);
+    if (travelDestination === destination) {
+      travelMap.hidden = false;
+      teleportButton.disabled = false;
+    }
+  });
 });
 
 const fontaineBackground = document.getElementById("fontaine-background");

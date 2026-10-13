@@ -11,6 +11,8 @@ const orientationScreen = document.getElementById("orientation-screen");
 let startupStage = "orientation";
 let pausedForOrientation = false;
 let audioContext;
+let loadingVideoSource;
+let loadingVideoGain;
 
 function isLandscape() {
   return window.matchMedia("(orientation: landscape)").matches;
@@ -37,6 +39,13 @@ function showFullscreenFallback() {
 function showSoundScreen() {
   startupStage = "sound";
   showTechnicalScreen("Сделайте звук погромче.\nОн понадобится дальше.");
+  // Начинаем незаметно готовить первый отрезок, пока игрок читает подсказку.
+  // После нажатия всё ещё показываем золотой экран до фактической готовности.
+  if (window.preloadStoryBundle) {
+    window.preloadStoryBundle("startup").catch(error => {
+      console.warn("Предварительная загрузка стартовой главы продолжится при нажатии:", error);
+    });
+  }
 }
 
 async function requestGameFullscreen() {
@@ -77,9 +86,62 @@ function playLoadingVideo() {
   loadingVideo.muted = false;
   loadingVideo.volume = 1;
   loadingVideo.loop = false;
-  // play вызывается непосредственно из нажатия: это необходимо Safari для звука.
+  if (loadingVideoGain) loadingVideoGain.gain.value = 1;
+  // На Safari этот элемент заранее активирован тем же нажатием, которое открыло загрузчик.
   const playback = loadingVideo.play();
   if (playback) playback.catch(showVideoError);
+}
+
+// Safari может потерять разрешение на видео со звуком за время асинхронной
+// предзагрузки. Коротко активируем именно этот video внутри исходного нажатия,
+// затем возвращаем его в начало; золотой экран в этот момент остаётся поверх.
+function primeLoadingVideoForSafari() {
+  if (!audioContext || !audioContext.createMediaElementSource) return;
+  try {
+    if (!loadingVideoSource) {
+      loadingVideoSource = audioContext.createMediaElementSource(loadingVideo);
+      loadingVideoGain = audioContext.createGain();
+      loadingVideoSource.connect(loadingVideoGain).connect(audioContext.destination);
+    }
+    loadingVideoGain.gain.value = 0;
+  } catch {
+    // Если Web Audio недоступен, обычный запуск покажет штатную кнопку повтора Safari.
+    return;
+  }
+  loadingVideo.muted = false;
+  loadingVideo.volume = 1;
+  loadingVideo.loop = false;
+  let priming;
+  try {
+    priming = loadingVideo.play();
+  } catch {
+    loadingVideoGain.gain.value = 1;
+    return;
+  }
+  if (!priming) {
+    if (startupStage !== "video") {
+      loadingVideo.pause();
+      try { loadingVideo.currentTime = 0; } catch { /* Safari может ещё не знать duration. */ }
+    }
+    return;
+  }
+  priming.then(() => {
+    if (startupStage !== "video") {
+      loadingVideo.pause();
+      try { loadingVideo.currentTime = 0; } catch { /* Safari может ещё не знать duration. */ }
+    }
+  }).catch(() => {
+    loadingVideoGain.gain.value = 1;
+  });
+}
+
+function playLoadingVideoAfterPreload() {
+  if (isLandscape()) {
+    playLoadingVideo();
+    return;
+  }
+  startupStage = "video-ready";
+  showTechnicalScreen("Поверните устройство горизонтально, затем запустите заставку.");
 }
 
 startupButton.addEventListener("click", () => {
@@ -101,6 +163,19 @@ startupButton.addEventListener("click", () => {
         unlockBackgroundMusic(audioContext);
       } catch { /* Видео может воспроизводить звук без Web Audio. */ }
     }
+    startupStage = "preloading";
+    startupButton.disabled = true;
+    if (window.runAssetLoadingTransition) {
+      const transition = window.runAssetLoadingTransition("startup", playLoadingVideoAfterPreload);
+      primeLoadingVideoForSafari();
+      transition.catch(error => {
+        console.warn("Не удалось дождаться всех стартовых ресурсов:", error);
+        playLoadingVideoAfterPreload();
+      });
+    } else {
+      playLoadingVideoAfterPreload();
+    }
+  } else if (startupStage === "video-ready") {
     playLoadingVideo();
   } else if (startupStage === "video-retry") {
     if (loadingVideo.error) loadingVideo.load();

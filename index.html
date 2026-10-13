@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Настя и Викутория</title>
-  <link rel="stylesheet" href="css/style.css?v=dialogue-gradient-2">
-  <script src="js/game.js?v=lazy-startup-1" defer></script>
-  <script src="js/startup.js?v=lazy-startup-1" defer></script>
+  <link rel="stylesheet" href="css/style.css?v=phased-preload-1">
+  <script src="js/game.js?v=phased-preload-1" defer></script>
+  <script src="js/startup.js?v=phased-preload-1" defer></script>
 </head>
 <body>
   <div id="orientation-screen" class="technical-screen orientation-screen">
@@ -15,6 +15,10 @@
   <section id="startup-screen" class="technical-screen" aria-label="Подготовка к игре">
     <p id="startup-text" aria-live="polite">Продолжите, когда устройство расположено горизонтально.</p>
     <button id="startup-button" type="button">Продолжить</button>
+  </section>
+  <section id="asset-loading-screen" class="asset-loading-screen" role="status"
+    aria-label="Загрузка игровых материалов" aria-busy="false" hidden>
+    <span class="asset-loading-spinner" aria-hidden="true"></span>
   </section>
   <section id="loading-screen" class="loading-screen" aria-label="Видео-заставка" hidden>
     <video id="loading-video" playsinline webkit-playsinline preload="auto" disablepictureinpicture
